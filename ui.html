@@ -1,0 +1,27 @@
+<h2>Lasso Tool</h2>
+<button class="create" data-mode="lasso">Lasso Tool</button>
+<button class="create" data-mode="polygonal-lasso">Polygonal Lasso Tool</button>
+<button class="cancel">Cancel</button>
+
+<script>
+  let mode = null;
+
+  window.addEventListener("blur", (e) => {
+    if (!mode) {
+      return;
+    }
+    parent.postMessage(
+      { pluginMessage: { type: "start", mode: "lasso" } },
+      "*",
+    );
+  });
+
+  document.querySelector(".create").onclick = (e) => {
+    mode = e.target.dataset.mode;
+  };
+
+  document.querySelector(".cancel").onclick = () => {
+    mode = null;
+    parent.postMessage({ pluginMessage: { type: "cancel" } }, "*");
+  };
+</script>
