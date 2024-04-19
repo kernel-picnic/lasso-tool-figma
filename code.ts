@@ -168,10 +168,22 @@ const stopLasso = async (position: any) => {
           if (fill.type === 'IMAGE') {
             const newFill = JSON.parse(JSON.stringify(fill))
             newFill.scaleMode = 'CROP'
-            const scaleX = selection.width / item.width
-            const scaleY = selection.height / item.height
-            const translateX = (selection.x - item.x) / item.width
-            const translateY = (selection.y - item.y) / item.height
+            const selectionX = selection.x
+            const selectionY = selection.y
+            const itemX = item.x
+            const itemY = item.y
+            const intersectionX = Math.max(selectionX, itemX)
+            const intersectionY = Math.max(selectionY, itemY)
+            const intersectionWidth =
+              Math.min(selectionX + selection.width, itemX + item.width) -
+              intersectionX
+            const intersectionHeight =
+              Math.min(selectionY + selection.height, itemY + item.height) -
+              intersectionY
+            const scaleX = intersectionWidth / item.width
+            const scaleY = intersectionHeight / item.height
+            const translateX = (intersectionX - item.x) / item.width
+            const translateY = (intersectionY - item.y) / item.height
             newFill.imageTransform = [
               [scaleX, 0, translateX],
               [0, scaleY, translateY],
