@@ -115,7 +115,6 @@ const traverseAndGetIntersections = (
 
 function isNodeInViewport(node: SceneNode) {
   const nodeBounds = node.absoluteBoundingBox
-  console.log(nodeBounds)
 
   if (!nodeBounds) {
     return false
@@ -164,25 +163,15 @@ const stopLasso = async (position: any) => {
       item.fills.some(({ type }) => type === 'IMAGE')
     ) {
       clone = item.clone()
-      console.log(item)
       if (Array.isArray(item.fills)) {
         clone.fills = item.fills.map((fill) => {
           if (fill.type === 'IMAGE') {
             const newFill = JSON.parse(JSON.stringify(fill))
             newFill.scaleMode = 'CROP'
-            // TODO: MATH!!!
-
             const scaleX = selection.width / item.width
             const scaleY = selection.height / item.height
-
-            const angleInDegrees = 45
-            const angleInRadians = (angleInDegrees * Math.PI) / 180
-            const distance = item.x - selection.x // Adjust as needed
-            const translateX = distance * Math.cos(angleInRadians)
-            const translateY = distance * Math.sin(angleInRadians)
-
-            console.log(translateX, translateY)
-
+            const translateX = (selection.x - item.x) / item.width
+            const translateY = (selection.y - item.y) / item.height
             newFill.imageTransform = [
               [scaleX, 0, translateX],
               [0, scaleY, translateY],
@@ -192,15 +181,14 @@ const stopLasso = async (position: any) => {
           return fill
         })
       }
-      console.log(clone)
     } else {
       clone = item.clone()
     }
-    // Copy rotation angle
+    // Copy position
     clone.relativeTransform = item.absoluteTransform
     figma.currentPage.appendChild(clone)
     const selectionClone = selection.clone()
-    // Without fill intersetion will not work
+    // Without fill intersection will not work
     selectionClone.fills = [figma.util.solidPaint('#fff')]
     figma.currentPage.appendChild(selectionClone)
     const intersection = figma.intersect(
@@ -215,22 +203,20 @@ const stopLasso = async (position: any) => {
 
     // TODO: fix unhandled promise rejection: Error: in flatten: Failed to apply flatten operation
     const flatNode = figma.flatten([intersection], figma.currentPage)
-    item.parent?.appendChild(flatNode)
-
     result.push(flatNode)
 
-    let parentName = 'root'
-    // @ts-ignore
-    if (item.parent && item.type !== 'PAGE' && item.type !== 'FRAME') {
-      parentName = item.parent.name
-    }
-    if (!groups[parentName]) {
-      groups[parentName] = {
-        nodes: [],
-        parent: item.parent,
-      }
-    }
-    groups[parentName].nodes.push(flatNode)
+    // let parentName = 'root'
+    // // @ts-ignore
+    // if (item.parent && item.type !== 'PAGE' && item.type !== 'FRAME') {
+    //   parentName = item.parent.name
+    // }
+    // if (!groups[parentName]) {
+    //   groups[parentName] = {
+    //     nodes: [],
+    //     parent: item.parent,
+    //   }
+    // }
+    // groups[parentName].nodes.push(flatNode)
   })
 
   console.log('result', result, groups)
