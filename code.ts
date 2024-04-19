@@ -134,6 +134,7 @@ const stopLasso = async (position: any) => {
   // selection.dashPattern= [10 / zoom, 10 / zoom]
   segments[vertices.length - 1].end = 0
   await changeSelectionNetwork(position)
+  selection.locked = false
 
   vertices.length = 0
   segments.length = 0
@@ -260,6 +261,10 @@ figma.ui.onmessage = (msg: {
     selection.cornerRadius = 100 // Not working
     const zoom = figma.viewport.zoom
     selection.strokeWeight = 1 / zoom
+    selection.strokeJoin = 'ROUND'
+    selection.strokes = [figma.util.solidPaint('#505050')]
+    // To prevent vector selection
+    selection.locked = true
     savedPosition = getMousePosition()
 
     interval = setInterval(() => {
