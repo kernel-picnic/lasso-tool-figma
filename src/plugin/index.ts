@@ -1,3 +1,4 @@
+import { actions } from '@common/actions'
 import { areNodesIntersecting } from '@plugin/utils/are-nodes-intersecting'
 import { getMousePosition } from '@plugin/utils/get-mouse-position'
 import { isNodeInViewport } from '@plugin/utils/is-node-in-viewport'
@@ -15,7 +16,7 @@ const segments: any[] = []
 // TODO: add type
 let savedPosition: any = {}
 
-const changeSelectionNetwork = (position: any) => {
+const changeVector = (position: any) => {
   return selection
     .setVectorNetworkAsync({
       vertices,
@@ -57,13 +58,51 @@ const traverseAndGetIntersections = (
   return accumulator
 }
 
-const stopLasso = async (position: any) => {
+function start() {
+  selection.cornerRadius = 100 // Not working
+  const zoom = figma.viewport.zoom
+  selection.strokeWeight = 1.5 / zoom
+  selection.strokeJoin = 'ROUND'
+  selection.blendMode = 'EXCLUSION'
+  selection.strokes = [figma.util.solidPaint('#fff')]
+  // To prevent vector selection
+  selection.locked = true
+  savedPosition = getMousePosition()
+
+  interval = setInterval(() => {
+    const position = getMousePosition()
+    if (!position) {
+      return
+    }
+
+    if (vertices.length > 100) {
+      const { x: xv, y: yv } = vertices[0]
+      const { x: xn, y: yn } = position
+      const threshold = 3
+      if (Math.abs(xv - xn) <= threshold && Math.abs(yv - yn) <= threshold) {
+        stop(position)
+        return
+      }
+    }
+
+    const count = vertices.push(position)
+    segments.push({ start: count - 1, end: count })
+    if (segments[count - 2]) {
+      segments[count - 2].end = count - 1
+    }
+    segments[count - 1].end = count - 1
+    changeVector(position)
+  }, 10)
+
+  figma.currentPage.appendChild(selection)
+}
+
+async function stop(position: any) {
   clearInterval(interval)
 
-  // const zoom = figma.viewport.zoom
-  // selection.dashPattern= [10 / zoom, 10 / zoom]
+  // Connect last point with first
   segments[vertices.length - 1].end = 0
-  await changeSelectionNetwork(position)
+  await changeVector(position)
   selection.locked = false
 
   vertices.length = 0
@@ -77,6 +116,7 @@ const stopLasso = async (position: any) => {
       .filter(({ id }) => id !== selection.id),
     selection,
   )
+
   console.log('inter', intersections)
 
   const result: any = []
@@ -148,30 +188,10 @@ const stopLasso = async (position: any) => {
     // TODO: fix unhandled promise rejection: Error: in flatten: Failed to apply flatten operation
     const flatNode = figma.flatten([intersection], figma.currentPage)
     result.push(flatNode)
-
-    // let parentName = 'root'
-    // // @ts-ignore
-    // if (item.parent && item.type !== 'PAGE' && item.type !== 'FRAME') {
-    //   parentName = item.parent.name
-    // }
-    // if (!groups[parentName]) {
-    //   groups[parentName] = {
-    //     nodes: [],
-    //     parent: item.parent,
-    //   }
-    // }
-    // groups[parentName].nodes.push(flatNode)
   })
 
   console.log('result', result, groups)
 
-  // Object.entries(groups).forEach(
-  //   ([name, groupData]: [name: any, groupData: any]) => {
-  //     const groupNode = figma.group(groupData.nodes, groupData.parent)
-  //     groupNode.name = name
-  //     result.appendChild(groupNode)
-  //   },
-  // )
   if (result.length) {
     const resultGroup = figma.group(result, figma.currentPage)
     resultGroup.name = 'Lasso Result'
@@ -193,64 +213,19 @@ const stopLasso = async (position: any) => {
   })
 }
 
-// Calls to "parent.postMessage" from within the HTML page will trigger this
-// callback. The callback will be passed the "pluginMessage" property of the
-// posted message.
-figma.ui.onmessage = (msg: {
+figma.ui.onmessage = (message: {
   action: string
   startPosition: any
   mode: string
 }) => {
-  selection = figma.createVector()
+  switch (message.action) {
+    case actions.START:
+      selection = figma.createVector()
+      start()
+      break
 
-  if (msg.action === 'start') {
-    selection.cornerRadius = 100 // Not working
-    const zoom = figma.viewport.zoom
-    selection.strokeWeight = 1.5 / zoom
-    selection.strokeJoin = 'ROUND'
-    selection.blendMode = 'EXCLUSION'
-    selection.strokes = [figma.util.solidPaint('#fff')]
-    // To prevent vector selection
-    selection.locked = true
-    savedPosition = getMousePosition()
-
-    interval = setInterval(() => {
-      const position = getMousePosition()
-      if (!position) {
-        return
-      }
-
-      if (vertices.length > 100) {
-        const { x: xv, y: yv } = vertices[0]
-        const { x: xn, y: yn } = position
-        const threshold = 3
-        if (Math.abs(xv - xn) <= threshold && Math.abs(yv - yn) <= threshold) {
-          stopLasso(position)
-          return
-        }
-      }
-
-      const count = vertices.push(position)
-      segments.push({ start: count - 1, end: count })
-      if (segments[count - 2]) {
-        segments[count - 2].end = count - 1
-      }
-      segments[count - 1].end = count - 1
-      changeSelectionNetwork(position)
-    }, 10)
-
-    figma.currentPage.appendChild(selection)
-    // document.addEventListener('mousemove', (e) => {
-    //   console.log(e);
-    // })
-    // figma.viewport.scrollAndZoomIntoView(nodes);
+    case actions.CANCEL:
+      stop(getMousePosition())
+      break
   }
-
-  if (msg.action === 'cancel') {
-    stopLasso(getMousePosition())
-  }
-
-  // Make sure to close the plugin when you're done. Otherwise the plugin will
-  // keep running, which shows the cancel button at the bottom of the screen.
-  // figma.closePlugin();
 }

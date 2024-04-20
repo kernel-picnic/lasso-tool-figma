@@ -7,6 +7,7 @@
 
 <script>
 import AppButton from '@ui/components/app-button.vue'
+import { actions } from '@common/actions.js'
 
 export default {
   name: 'App',
@@ -35,19 +36,14 @@ export default {
       if (!this.mode) {
         return
       }
-      parent.postMessage(
-        {
-          pluginMessage: {
-            action: 'start',
-            mode: 'lasso',
-          },
-        },
-        '*',
-      )
+      postMessage({
+        action: actions.START,
+        mode: this.mode,
+      })
     },
     stop() {
       this.mode = null
-      parent.postMessage({ pluginMessage: { action: 'cancel' } }, '*')
+      postMessage({ action: actions.CANCEL })
     },
   },
 }

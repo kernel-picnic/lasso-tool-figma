@@ -18,6 +18,7 @@ export default defineConfig(({ mode }) => ({
   },
   resolve: {
     alias: {
+      '@common': path.resolve('src/common'),
       '@ui': path.resolve('src/ui'),
     },
   },
