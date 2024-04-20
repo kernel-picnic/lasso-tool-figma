@@ -1,67 +1,12 @@
+import { areNodesIntersecting } from '@plugin/utils/are-nodes-intersecting'
+import { getMousePosition } from '@plugin/utils/get-mouse-position'
+import { isNodeInViewport } from '@plugin/utils/is-node-in-viewport'
+
 const FILL_IMAGE =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAFCAYAAAB8ZH1oAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAhSURBVHgBjcxBDQAACIBAdPavjBXgzW4ACS2x0wR2MY8PN64ECEABN0sAAAAASUVORK5CYII='
 
-const isIntersected = (outer: Rect, inner: Rect): boolean => {
-  const innerTop = inner.y
-  const innerRight = inner.x + inner.width
-  const innerBottom = inner.y + inner.height
-  const innerLeft = inner.x
-
-  const outerTop = outer.y
-  const outerRight = outer.x + outer.width
-  const outerBottom = outer.y + outer.height
-  const outerLeft = outer.x
-
-  return !(
-    innerRight < outerLeft ||
-    innerLeft > outerRight ||
-    innerBottom < outerTop ||
-    innerTop > outerBottom
-  )
-}
-
-const notEmpty = <TValue>(value: null | TValue | undefined): value is TValue =>
-  value !== null && value !== undefined
-
-const isEmpty = <TValue>(
-  value: null | TValue | undefined,
-): value is null | undefined => value === null || value === undefined
-
-const hasBoundingBox = (
-  node: SceneNode,
-): node is SceneNode & { absoluteBoundingBox: Rect } =>
-  'absoluteBoundingBox' in node && notEmpty(node.absoluteBoundingBox)
-
-const areNodesIntersecting = (
-  node: SceneNode,
-  selectedNode: SceneNode,
-): boolean => {
-  if (!hasBoundingBox(selectedNode)) {
-    return false
-  }
-
-  return (
-    hasBoundingBox(node) &&
-    isIntersected(node.absoluteBoundingBox, selectedNode.absoluteBoundingBox) &&
-    'visible' in node &&
-    node.visible
-  )
-}
-
 // This shows the HTML page in "ui.html".
 figma.showUI(__html__, { themeColors: true })
-
-const getMousePosition = (): any => {
-  const { position }: { position: any } = figma.activeUsers[0]
-  if (!position) {
-    return
-  }
-  return position
-  // TODO: add 'precision' option
-  // const x = Math.round(position.x)
-  // const y = Math.round(position.y)
-  // return { x, y }
-}
 
 let interval: any
 let selection: VectorNode
@@ -69,12 +14,6 @@ const vertices: any[] = []
 const segments: any[] = []
 // TODO: add type
 let savedPosition: any = {}
-// const background = figma.createRectangle()
-// background.x = figma.viewport.bounds.x
-// background.y = figma.viewport.bounds.y
-// background.resize(figma.viewport.bounds.width, figma.viewport.bounds.height)
-// background.fills = []
-// figma.currentPage.appendChild(background)
 
 const changeSelectionNetwork = (position: any) => {
   return selection
@@ -116,20 +55,6 @@ const traverseAndGetIntersections = (
   })
 
   return accumulator
-}
-
-function isNodeInViewport(node: SceneNode) {
-  const nodeBounds = node.absoluteBoundingBox
-
-  if (!nodeBounds) {
-    return false
-  }
-  return (
-    nodeBounds.x + nodeBounds.width >= figma.viewport.bounds.x &&
-    nodeBounds.x <= figma.viewport.bounds.x + figma.viewport.bounds.width &&
-    nodeBounds.y + nodeBounds.height >= figma.viewport.bounds.y &&
-    nodeBounds.y <= figma.viewport.bounds.y + figma.viewport.bounds.height
-  )
 }
 
 const stopLasso = async (position: any) => {
