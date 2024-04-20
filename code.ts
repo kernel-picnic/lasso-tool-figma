@@ -1,3 +1,6 @@
+const FILL_IMAGE =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAFCAYAAAB8ZH1oAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAhSURBVHgBjcxBDQAACIBAdPavjBXgzW4ACS2x0wR2MY8PN64ECEABN0sAAAAASUVORK5CYII='
+
 const isIntersected = (outer: Rect, inner: Rect): boolean => {
   const innerTop = inner.y
   const innerRight = inner.x + inner.width
@@ -46,16 +49,18 @@ const areNodesIntersecting = (
 }
 
 // This shows the HTML page in "ui.html".
-figma.showUI(__html__)
+figma.showUI(__html__, { themeColors: true })
 
 const getMousePosition = (): any => {
   const { position }: { position: any } = figma.activeUsers[0]
   if (!position) {
     return
   }
-  const x = Math.round(position.x)
-  const y = Math.round(position.y)
-  return { x, y }
+  return position
+  // TODO: add 'precision' option
+  // const x = Math.round(position.x)
+  // const y = Math.round(position.y)
+  // return { x, y }
 }
 
 let interval: any
@@ -156,6 +161,7 @@ const stopLasso = async (position: any) => {
     let clone: SceneNode
     if (item.type === 'FRAME') {
       clone = figma.createRectangle()
+      // TODO: calc new gradients
       clone.fills = item.fills
       clone.resize(item.width, item.height)
     } else if (
@@ -241,28 +247,44 @@ const stopLasso = async (position: any) => {
   //     result.appendChild(groupNode)
   //   },
   // )
-  const resultGroup = figma.group(result, figma.currentPage)
-  resultGroup.name = 'Lasso Result'
+  if (result.length) {
+    const resultGroup = figma.group(result, figma.currentPage)
+    resultGroup.name = 'Lasso Result'
+  }
 
-  selection.remove()
+  selection.blendMode = 'NORMAL'
+  const { hash } = await figma.createImageAsync(FILL_IMAGE)
+  selection.strokes = [
+    {
+      blendMode: 'NORMAL',
+      imageHash: hash,
+      scaleMode: 'TILE',
+      type: 'IMAGE',
+    },
+  ]
+
+  figma.ui.postMessage({
+    action: 'done',
+  })
 }
 
 // Calls to "parent.postMessage" from within the HTML page will trigger this
 // callback. The callback will be passed the "pluginMessage" property of the
 // posted message.
 figma.ui.onmessage = (msg: {
-  type: string
+  action: string
   startPosition: any
   mode: string
 }) => {
   selection = figma.createVector()
 
-  if (msg.type === 'start') {
+  if (msg.action === 'start') {
     selection.cornerRadius = 100 // Not working
     const zoom = figma.viewport.zoom
-    selection.strokeWeight = 1 / zoom
+    selection.strokeWeight = 1.5 / zoom
     selection.strokeJoin = 'ROUND'
-    selection.strokes = [figma.util.solidPaint('#505050')]
+    selection.blendMode = 'EXCLUSION'
+    selection.strokes = [figma.util.solidPaint('#fff')]
     // To prevent vector selection
     selection.locked = true
     savedPosition = getMousePosition()
@@ -299,7 +321,7 @@ figma.ui.onmessage = (msg: {
     // figma.viewport.scrollAndZoomIntoView(nodes);
   }
 
-  if (msg.type === 'cancel') {
+  if (msg.action === 'cancel') {
     stopLasso(getMousePosition())
   }
 
