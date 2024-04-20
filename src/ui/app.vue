@@ -1,11 +1,12 @@
 <template>
   <img src="@ui/assets/logo.svg" alt="Lasso Tool" />
-  <app-button @click="setMode('standard')">Standard Lasso</app-button>
-  <app-button @click="setMode('polygonal')">Polygonal Lasso</app-button>
+  <app-button @click="setMode(modes.STANDARD)">Standard Lasso</app-button>
+  <app-button @click="setMode(modes.MAGNETIC)">Magnetic Lasso</app-button>
   <app-button @click="stop">Cancel</app-button>
 </template>
 
 <script>
+import { Modes } from '@common/types/modes'
 import { actions } from '@common/actions'
 import { postPluginMessage } from './utils/post-plugin-message'
 import AppButton from '@ui/components/app-button.vue'
@@ -19,6 +20,9 @@ export default {
     return {
       mode: null,
     }
+  },
+  computed: {
+    modes: () => Modes,
   },
   mounted() {
     window.addEventListener('blur', this.start)

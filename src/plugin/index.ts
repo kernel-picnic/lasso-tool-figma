@@ -1,10 +1,13 @@
+import { Modes } from '@common/types/modes'
 import { actions } from '@common/actions'
-import { areNodesIntersecting } from '@plugin/utils/are-nodes-intersecting'
 import { getMousePosition } from '@plugin/utils/get-mouse-position'
-import { isNodeInViewport } from '@plugin/utils/is-node-in-viewport'
+import { nearestPositionToNode } from '@plugin/utils/nearest-position-to-node'
+import { distanceToNodeSide } from '@plugin/utils/distance-to-node-side'
+import { traverseAndGetIntersections } from '@plugin/utils/traverse-and-get-intersections'
 
 const SELECTION_INTERVAL = 10
 const AUTOSTOP_THRESHOLD = 100
+const MAGNETIC_DISTANCE = 30
 const FILL_IMAGE =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAFCAYAAAB8ZH1oAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAhSURBVHgBjcxBDQAACIBAdPavjBXgzW4ACS2x0wR2MY8PN64ECEABN0sAAAAASUVORK5CYII='
 
@@ -36,31 +39,35 @@ const updateSelection = (position: any = savedPosition) => {
     })
 }
 
-const traverseAndGetIntersections = (
-  nodes: SceneNode[],
-  selectedNode: SceneNode,
-  accumulator: SceneNode[] = [],
-): SceneNode[] => {
-  nodes.forEach((node) => {
-    if (areNodesIntersecting(node, selectedNode)) {
-      if (node.type !== 'GROUP') {
-        accumulator.push(node)
-      }
-
-      if ('children' in node && node.children.length > 0) {
-        traverseAndGetIntersections(
-          Array.from(node.children),
-          selectedNode,
-          accumulator,
-        )
-      }
+const getMagneticPosition = (mousePosition: Vector): Vector | undefined => {
+  const nodes = figma.currentPage.findAll()
+  for (let node of nodes) {
+    if (node.id === selection.id) {
+      continue
     }
-  })
-
-  return accumulator
+    if (!node.absoluteBoundingBox) {
+      continue
+    }
+    const distance = distanceToNodeSide(mousePosition, node.absoluteBoundingBox)
+    if (distance.x > MAGNETIC_DISTANCE || distance.y > MAGNETIC_DISTANCE) {
+      continue
+    }
+    const nearestPosition = nearestPositionToNode(
+      mousePosition,
+      node.absoluteBoundingBox,
+    )
+    if (
+      // If user already over node, node side can be far
+      Math.abs(nearestPosition.x - mousePosition.x) > MAGNETIC_DISTANCE ||
+      Math.abs(nearestPosition.y - mousePosition.y) > MAGNETIC_DISTANCE
+    ) {
+      continue
+    }
+    return nearestPosition
+  }
 }
 
-function start() {
+function start(mode: Modes) {
   selection = figma.createVector()
   selection.cornerRadius = 100 // TODO: Not working
   const zoom = figma.viewport.zoom
@@ -74,9 +81,16 @@ function start() {
   figma.currentPage.appendChild(selection)
 
   interval = setInterval(() => {
-    const position = getMousePosition()
+    let position = getMousePosition()
     if (!position) {
       return
+    }
+
+    if (mode === Modes.MAGNETIC) {
+      const magneticPosition = getMagneticPosition(position)
+      if (magneticPosition) {
+        position = magneticPosition
+      }
     }
 
     if (vertices.length > AUTOSTOP_THRESHOLD) {
@@ -116,9 +130,7 @@ async function stop() {
   console.log('all', figma.currentPage.findAll())
 
   const intersections = traverseAndGetIntersections(
-    figma.currentPage
-      .findAll((node) => isNodeInViewport(node))
-      .filter(({ id }) => id !== selection.id),
+    figma.currentPage.findAll(),
     selection,
   )
 
@@ -128,71 +140,81 @@ async function stop() {
   const groups: any = {}
 
   intersections.forEach((item) => {
-    let clone: SceneNode
-    if (item.type === 'FRAME') {
-      clone = figma.createRectangle()
-      // TODO: calc new gradients
-      clone.fills = item.fills
-      clone.resize(item.width, item.height)
-    } else if (
-      item.type === 'RECTANGLE' &&
-      Array.isArray(item.fills) &&
-      item.fills.some(({ type }) => type === 'IMAGE')
-    ) {
-      clone = item.clone()
-      if (Array.isArray(item.fills)) {
-        clone.fills = item.fills.map((fill) => {
-          if (fill.type === 'IMAGE') {
-            const newFill = JSON.parse(JSON.stringify(fill))
-            newFill.scaleMode = 'CROP'
-            const selectionX = selection.x
-            const selectionY = selection.y
-            const itemX = item.x
-            const itemY = item.y
-            const intersectionX = Math.max(selectionX, itemX)
-            const intersectionY = Math.max(selectionY, itemY)
-            const intersectionWidth =
-              Math.min(selectionX + selection.width, itemX + item.width) -
-              intersectionX
-            const intersectionHeight =
-              Math.min(selectionY + selection.height, itemY + item.height) -
-              intersectionY
-            const scaleX = intersectionWidth / item.width
-            const scaleY = intersectionHeight / item.height
-            const translateX = (intersectionX - item.x) / item.width
-            const translateY = (intersectionY - item.y) / item.height
-            newFill.imageTransform = [
-              [scaleX, 0, translateX],
-              [0, scaleY, translateY],
-            ]
-            return newFill
-          }
-          return fill
-        })
-      }
-    } else {
-      clone = item.clone()
+    if (item.id === selection.id) {
+      return
     }
-    // Copy position
-    clone.relativeTransform = item.absoluteTransform
-    figma.currentPage.appendChild(clone)
-    const selectionClone = selection.clone()
-    // Without fill intersection will not work
-    selectionClone.fills = [figma.util.solidPaint('#fff')]
-    figma.currentPage.appendChild(selectionClone)
-    const intersection = figma.intersect(
-      [selectionClone, clone],
-      figma.currentPage,
-    )
-    if ('fills' in clone) intersection.fills = clone.fills
-    if ('effects' in clone) intersection.effects = clone.effects
-    if ('strokes' in clone) intersection.strokes = clone.strokes
-    if ('strokeWeight' in clone) intersection.strokeWeight = clone.strokeWeight
-    intersection.name = clone.name
 
-    // TODO: fix unhandled promise rejection: Error: in flatten: Failed to apply flatten operation
-    const flatNode = figma.flatten([intersection], figma.currentPage)
-    result.push(flatNode)
+    // TODO: refactoring
+    try {
+      let clone: SceneNode
+      if (item.type === 'FRAME') {
+        clone = figma.createRectangle()
+        // TODO: calc new gradients
+        clone.fills = item.fills
+        clone.resize(item.width, item.height)
+      } else if (
+        item.type === 'RECTANGLE' &&
+        Array.isArray(item.fills) &&
+        item.fills.some(({ type }) => type === 'IMAGE')
+      ) {
+        clone = item.clone()
+        if (Array.isArray(item.fills)) {
+          clone.fills = item.fills.map((fill) => {
+            if (fill.type === 'IMAGE') {
+              const newFill = JSON.parse(JSON.stringify(fill))
+              newFill.scaleMode = 'CROP'
+              const selectionX = selection.x
+              const selectionY = selection.y
+              const itemX = item.x
+              const itemY = item.y
+              const intersectionX = Math.max(selectionX, itemX)
+              const intersectionY = Math.max(selectionY, itemY)
+              const intersectionWidth =
+                Math.min(selectionX + selection.width, itemX + item.width) -
+                intersectionX
+              const intersectionHeight =
+                Math.min(selectionY + selection.height, itemY + item.height) -
+                intersectionY
+              const scaleX = intersectionWidth / item.width
+              const scaleY = intersectionHeight / item.height
+              const translateX = (intersectionX - item.x) / item.width
+              const translateY = (intersectionY - item.y) / item.height
+              newFill.imageTransform = [
+                [scaleX, 0, translateX],
+                [0, scaleY, translateY],
+              ]
+              return newFill
+            }
+            return fill
+          })
+        }
+      } else {
+        clone = item.clone()
+      }
+      // Copy position
+      clone.relativeTransform = item.absoluteTransform
+      figma.currentPage.appendChild(clone)
+      const selectionClone = selection.clone()
+      // Without fill intersection will not work
+      selectionClone.fills = [figma.util.solidPaint('#fff')]
+      figma.currentPage.appendChild(selectionClone)
+      const intersection = figma.intersect(
+        [selectionClone, clone],
+        figma.currentPage,
+      )
+      if ('fills' in clone) intersection.fills = clone.fills
+      if ('effects' in clone) intersection.effects = clone.effects
+      if ('strokes' in clone) intersection.strokes = clone.strokes
+      if ('strokeWeight' in clone)
+        intersection.strokeWeight = clone.strokeWeight
+      intersection.name = clone.name
+
+      // TODO: fix unhandled promise rejection: Error: in flatten: Failed to apply flatten operation
+      const flatNode = figma.flatten([intersection], figma.currentPage)
+      result.push(flatNode)
+    } catch (e) {
+      console.error('Error: ', e)
+    }
   })
 
   console.log('result', result, groups)
@@ -218,14 +240,10 @@ async function stop() {
   })
 }
 
-figma.ui.onmessage = (message: {
-  action: string
-  startPosition: any
-  mode: string
-}) => {
+figma.ui.onmessage = (message: { action: string; mode: Modes }) => {
   switch (message.action) {
     case actions.START:
-      start()
+      start(message.mode)
       break
 
     case actions.CANCEL:
