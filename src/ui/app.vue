@@ -6,8 +6,9 @@
 </template>
 
 <script>
+import { actions } from '@common/actions'
+import { postPluginMessage } from './utils/post-plugin-message'
 import AppButton from '@ui/components/app-button.vue'
-import { actions } from '@common/actions.js'
 
 export default {
   name: 'App',
@@ -36,14 +37,14 @@ export default {
       if (!this.mode) {
         return
       }
-      postMessage({
+      postPluginMessage({
         action: actions.START,
         mode: this.mode,
       })
     },
     stop() {
       this.mode = null
-      postMessage({ action: actions.CANCEL })
+      postPluginMessage({ action: actions.CANCEL })
     },
   },
 }

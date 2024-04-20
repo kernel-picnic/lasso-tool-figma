@@ -3,6 +3,8 @@ import { areNodesIntersecting } from '@plugin/utils/are-nodes-intersecting'
 import { getMousePosition } from '@plugin/utils/get-mouse-position'
 import { isNodeInViewport } from '@plugin/utils/is-node-in-viewport'
 
+const SELECTION_INTERVAL = 10
+const AUTOSTOP_THRESHOLD = 100
 const FILL_IMAGE =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAFCAYAAAB8ZH1oAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAhSURBVHgBjcxBDQAACIBAdPavjBXgzW4ACS2x0wR2MY8PN64ECEABN0sAAAAASUVORK5CYII='
 
@@ -16,7 +18,7 @@ const segments: any[] = []
 // TODO: add type
 let savedPosition: any = {}
 
-const changeVector = (position: any) => {
+const updateSelection = (position: any = savedPosition) => {
   return selection
     .setVectorNetworkAsync({
       vertices,
@@ -59,7 +61,8 @@ const traverseAndGetIntersections = (
 }
 
 function start() {
-  selection.cornerRadius = 100 // Not working
+  selection = figma.createVector()
+  selection.cornerRadius = 100 // TODO: Not working
   const zoom = figma.viewport.zoom
   selection.strokeWeight = 1.5 / zoom
   selection.strokeJoin = 'ROUND'
@@ -68,6 +71,7 @@ function start() {
   // To prevent vector selection
   selection.locked = true
   savedPosition = getMousePosition()
+  figma.currentPage.appendChild(selection)
 
   interval = setInterval(() => {
     const position = getMousePosition()
@@ -75,12 +79,15 @@ function start() {
       return
     }
 
-    if (vertices.length > 100) {
+    if (vertices.length > AUTOSTOP_THRESHOLD) {
       const { x: xv, y: yv } = vertices[0]
       const { x: xn, y: yn } = position
-      const threshold = 3
-      if (Math.abs(xv - xn) <= threshold && Math.abs(yv - yn) <= threshold) {
-        stop(position)
+      const thresholdPixels = 3
+      if (
+        Math.abs(xv - xn) <= thresholdPixels &&
+        Math.abs(yv - yn) <= thresholdPixels
+      ) {
+        stop()
         return
       }
     }
@@ -91,18 +98,16 @@ function start() {
       segments[count - 2].end = count - 1
     }
     segments[count - 1].end = count - 1
-    changeVector(position)
-  }, 10)
-
-  figma.currentPage.appendChild(selection)
+    updateSelection(position)
+  }, SELECTION_INTERVAL)
 }
 
-async function stop(position: any) {
+async function stop() {
   clearInterval(interval)
 
   // Connect last point with first
   segments[vertices.length - 1].end = 0
-  await changeVector(position)
+  await updateSelection()
   selection.locked = false
 
   vertices.length = 0
@@ -220,12 +225,11 @@ figma.ui.onmessage = (message: {
 }) => {
   switch (message.action) {
     case actions.START:
-      selection = figma.createVector()
       start()
       break
 
     case actions.CANCEL:
-      stop(getMousePosition())
+      stop()
       break
   }
 }
