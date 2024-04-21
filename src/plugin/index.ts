@@ -1,10 +1,11 @@
 import { Modes } from '@common/types/modes'
-import { actions } from '@common/actions'
+import { Actions } from '@common/types/actions'
 import { getMousePosition } from '@plugin/utils/get-mouse-position'
 import { nearestPositionToNode } from '@plugin/utils/nearest-position-to-node'
 import { distanceToNodeSide } from '@plugin/utils/distance-to-node-side'
 import { traverseAndGetIntersections } from '@plugin/utils/traverse-and-get-intersections'
 
+const SELECTION_STROKE_BASE_WIDTH = 1.5
 const SELECTION_INTERVAL = 10
 const AUTOSTOP_THRESHOLD = 100
 const MAGNETIC_DISTANCE = 30
@@ -14,14 +15,15 @@ const FILL_IMAGE =
 // This shows the HTML page in "ui.html".
 figma.showUI(__html__, { themeColors: true })
 
-let interval: any
+let selectionDrawInterval: any
 let selection: VectorNode
-const vertices: any[] = []
-const segments: any[] = []
+let selectionChecker: any
+let vertices: VectorVertex[] = []
+let segments: any[] = []
 // TODO: add type
 let savedPosition: any = {}
 
-const updateSelection = (position: any = savedPosition) => {
+const redrawSelection = (position: any = savedPosition) => {
   return selection
     .setVectorNetworkAsync({
       vertices,
@@ -70,9 +72,7 @@ const getMagneticPosition = (mousePosition: Vector): Vector | undefined => {
 function start(mode: Modes) {
   selection = figma.createVector()
   selection.cornerRadius = 100 // TODO: Not working
-  const zoom = figma.viewport.zoom
-  selection.strokeWeight = 1.5 / zoom
-  selection.strokeJoin = 'ROUND'
+  selection.strokeJoin = 'ROUND' // TODO: Not working
   selection.blendMode = 'EXCLUSION'
   selection.strokes = [figma.util.solidPaint('#fff')]
   // To prevent vector selection
@@ -80,11 +80,14 @@ function start(mode: Modes) {
   savedPosition = getMousePosition()
   figma.currentPage.appendChild(selection)
 
-  interval = setInterval(() => {
+  selectionDrawInterval = setInterval(() => {
     let position = getMousePosition()
     if (!position) {
       return
     }
+
+    // Dynamic zoom depending on current zoom
+    selection.strokeWeight = SELECTION_STROKE_BASE_WIDTH / figma.viewport.zoom
 
     if (mode === Modes.MAGNETIC) {
       const magneticPosition = getMagneticPosition(position)
@@ -112,21 +115,80 @@ function start(mode: Modes) {
       segments[count - 2].end = count - 1
     }
     segments[count - 1].end = count - 1
-    updateSelection(position)
+    redrawSelection(position)
   }, SELECTION_INTERVAL)
 }
 
+function cloneImageFills(
+  intersection: BooleanOperationNode,
+  node: RectangleNode,
+): ImagePaint[] {
+  if (!Array.isArray(node.fills)) {
+    return []
+  }
+
+  const cloneFill = (fill: ImagePaint) => {
+    const newFill = JSON.parse(JSON.stringify(fill))
+    newFill.scaleMode = 'CROP'
+    const scaleX = intersection.width / node.width
+    const scaleY = intersection.height / node.height
+    const translateX = (intersection.x - node.x) / node.width
+    const translateY = (intersection.y - node.y) / node.height
+    newFill.imageTransform = [
+      [scaleX, 0, translateX],
+      [0, scaleY, translateY],
+    ]
+    return newFill
+  }
+
+  return node.fills.map((fill: ImagePaint) => {
+    if (fill.type === 'IMAGE') {
+      return cloneFill(fill)
+    }
+    return fill
+  })
+}
+
+function initChecker() {
+  selectionChecker = setInterval(() => {
+    if (selection.removed) {
+      figma.ui.postMessage({
+        action: Actions.SELECT_REMOVED,
+      })
+      clearInterval(selectionChecker)
+    }
+  }, 500)
+}
+
 async function stop() {
-  clearInterval(interval)
+  clearInterval(selectionDrawInterval)
 
   // Connect last point with first
   segments[vertices.length - 1].end = 0
-  await updateSelection()
+  await redrawSelection()
   selection.locked = false
 
   vertices.length = 0
   segments.length = 0
 
+  selection.blendMode = 'NORMAL'
+  const { hash } = await figma.createImageAsync(FILL_IMAGE)
+  // TODO: stroke animation (?)
+  selection.strokes = [
+    {
+      blendMode: 'NORMAL',
+      imageHash: hash,
+      scaleMode: 'TILE',
+      type: 'IMAGE',
+    },
+  ]
+
+  figma.ui.postMessage({ action: Actions.SELECT_END })
+  initChecker()
+  figma.currentPage.selection = [selection]
+}
+
+function applyAction(action: Actions) {
   console.log('all', figma.currentPage.findAll())
 
   const intersections = traverseAndGetIntersections(
@@ -137,71 +199,53 @@ async function stop() {
   console.log('inter', intersections)
 
   const result: any = []
-  const groups: any = {}
 
-  intersections.forEach((item) => {
-    if (item.id === selection.id) {
+  intersections.forEach((node) => {
+    if (node.id === selection.id) {
       return
     }
 
     // TODO: refactoring
     try {
       let clone: SceneNode
-      if (item.type === 'FRAME') {
+      if (node.type === 'FRAME') {
         clone = figma.createRectangle()
         // TODO: calc new gradients
-        clone.fills = item.fills
-        clone.resize(item.width, item.height)
-      } else if (
-        item.type === 'RECTANGLE' &&
-        Array.isArray(item.fills) &&
-        item.fills.some(({ type }) => type === 'IMAGE')
-      ) {
-        clone = item.clone()
-        if (Array.isArray(item.fills)) {
-          clone.fills = item.fills.map((fill) => {
-            if (fill.type === 'IMAGE') {
-              const newFill = JSON.parse(JSON.stringify(fill))
-              newFill.scaleMode = 'CROP'
-              const selectionX = selection.x
-              const selectionY = selection.y
-              const itemX = item.x
-              const itemY = item.y
-              const intersectionX = Math.max(selectionX, itemX)
-              const intersectionY = Math.max(selectionY, itemY)
-              const intersectionWidth =
-                Math.min(selectionX + selection.width, itemX + item.width) -
-                intersectionX
-              const intersectionHeight =
-                Math.min(selectionY + selection.height, itemY + item.height) -
-                intersectionY
-              const scaleX = intersectionWidth / item.width
-              const scaleY = intersectionHeight / item.height
-              const translateX = (intersectionX - item.x) / item.width
-              const translateY = (intersectionY - item.y) / item.height
-              newFill.imageTransform = [
-                [scaleX, 0, translateX],
-                [0, scaleY, translateY],
-              ]
-              return newFill
-            }
-            return fill
-          })
-        }
+        clone.fills = node.fills
+        clone.resize(node.width, node.height)
       } else {
-        clone = item.clone()
+        clone = node.clone()
       }
+
       // Copy position
-      clone.relativeTransform = item.absoluteTransform
+      clone.relativeTransform = node.absoluteTransform
       figma.currentPage.appendChild(clone)
       const selectionClone = selection.clone()
       // Without fill intersection will not work
       selectionClone.fills = [figma.util.solidPaint('#fff')]
       figma.currentPage.appendChild(selectionClone)
-      const intersection = figma.intersect(
-        [selectionClone, clone],
-        figma.currentPage,
-      )
+
+      let intersection
+      if (action === Actions.COPY) {
+        intersection = figma.intersect(
+          [selectionClone, clone],
+          figma.currentPage,
+        )
+      } else {
+        intersection = figma.subtract(
+          [selectionClone, clone],
+          figma.currentPage,
+        )
+      }
+
+      if (
+        clone.type === 'RECTANGLE' &&
+        Array.isArray(clone.fills) &&
+        clone.fills.some(({ type }) => type === 'IMAGE')
+      ) {
+        clone.fills = cloneImageFills(intersection, clone)
+      }
+
       if ('fills' in clone) intersection.fills = clone.fills
       if ('effects' in clone) intersection.effects = clone.effects
       if ('strokes' in clone) intersection.strokes = clone.strokes
@@ -209,45 +253,38 @@ async function stop() {
         intersection.strokeWeight = clone.strokeWeight
       intersection.name = clone.name
 
-      // TODO: fix unhandled promise rejection: Error: in flatten: Failed to apply flatten operation
       const flatNode = figma.flatten([intersection], figma.currentPage)
       result.push(flatNode)
     } catch (e) {
+      // TODO: fix unhandled promise rejection: Error: in flatten: Failed to apply flatten operation
       console.error('Error: ', e)
     }
   })
 
-  console.log('result', result, groups)
+  console.log('result', result)
 
   if (result.length) {
     const resultGroup = figma.group(result, figma.currentPage)
     resultGroup.name = 'Lasso Result'
   }
-
-  selection.blendMode = 'NORMAL'
-  const { hash } = await figma.createImageAsync(FILL_IMAGE)
-  selection.strokes = [
-    {
-      blendMode: 'NORMAL',
-      imageHash: hash,
-      scaleMode: 'TILE',
-      type: 'IMAGE',
-    },
-  ]
-
-  figma.ui.postMessage({
-    action: 'done',
-  })
 }
 
-figma.ui.onmessage = (message: { action: string; mode: Modes }) => {
+figma.ui.onmessage = (message: { action: Actions; mode: Modes }) => {
   switch (message.action) {
-    case actions.START:
+    case Actions.START:
       start(message.mode)
       break
 
-    case actions.CANCEL:
+    case Actions.CANCEL:
       stop()
+      break
+
+    case Actions.COPY:
+      applyAction(Actions.COPY)
+      break
+
+    case Actions.CROP:
+      applyAction(Actions.CROP)
       break
   }
 }
