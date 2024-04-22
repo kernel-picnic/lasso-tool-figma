@@ -7,8 +7,9 @@ import { traverseAndGetIntersections } from '@plugin/utils/traverse-and-get-inte
 
 const LASSO_STROKE_BASE_WIDTH = 1.5
 const LASSO_DRAW_INTERVAL = 10
-const AUTOSTOP_THRESHOLD = 100
-const MAGNETIC_DISTANCE = 30
+const LASSO_AUTOSTOP_MIN_VERTICES_COUNT = 100
+const LASSO_AUTOSTOP_BASE_PIXELS_THRESHOLD = 5
+const MAGNETIC_BASE_DISTANCE = 30
 const FILL_IMAGE =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAFCAYAAAB8ZH1oAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAhSURBVHgBjcxBDQAACIBAdPavjBXgzW4ACS2x0wR2MY8PN64ECEABN0sAAAAASUVORK5CYII='
 
@@ -43,6 +44,7 @@ const redrawLasso = (position: any = savedPosition) => {
 
 const getMagneticPosition = (mousePosition: Vector): Vector | undefined => {
   const nodes = figma.currentPage.findAll()
+  const magneticDistance = MAGNETIC_BASE_DISTANCE / figma.viewport.zoom
   for (let node of nodes) {
     if (node.id === lasso.id) {
       continue
@@ -51,7 +53,7 @@ const getMagneticPosition = (mousePosition: Vector): Vector | undefined => {
       continue
     }
     const distance = distanceToNodeSide(mousePosition, node.absoluteBoundingBox)
-    if (distance.x > MAGNETIC_DISTANCE || distance.y > MAGNETIC_DISTANCE) {
+    if (distance.x > magneticDistance || distance.y > magneticDistance) {
       continue
     }
     const nearestPosition = nearestPositionToNode(
@@ -60,8 +62,8 @@ const getMagneticPosition = (mousePosition: Vector): Vector | undefined => {
     )
     if (
       // If user already over node, node side can be far
-      Math.abs(nearestPosition.x - mousePosition.x) > MAGNETIC_DISTANCE ||
-      Math.abs(nearestPosition.y - mousePosition.y) > MAGNETIC_DISTANCE
+      Math.abs(nearestPosition.x - mousePosition.x) > magneticDistance ||
+      Math.abs(nearestPosition.y - mousePosition.y) > magneticDistance
     ) {
       continue
     }
@@ -75,9 +77,11 @@ function start(mode: Modes) {
     action: Actions.SELECT_START,
   })
 
+  // Reset previous selection
+  vertices.length = 0
+  segments.length = 0
+
   lasso = figma.createVector()
-  lasso.cornerRadius = 100 // TODO: Not working
-  lasso.strokeJoin = 'ROUND' // TODO: Not working
   lasso.blendMode = 'EXCLUSION'
   lasso.strokes = [figma.util.solidPaint('#fff')]
   // To prevent lasso being able selectable while drawing
@@ -101,10 +105,11 @@ function start(mode: Modes) {
       }
     }
 
-    if (vertices.length > AUTOSTOP_THRESHOLD) {
+    if (vertices.length > LASSO_AUTOSTOP_MIN_VERTICES_COUNT) {
       const { x: xv, y: yv } = vertices[0]
       const { x: xn, y: yn } = position
-      const thresholdPixels = 3
+      const thresholdPixels =
+        LASSO_AUTOSTOP_BASE_PIXELS_THRESHOLD / figma.viewport.zoom
       if (
         Math.abs(xv - xn) <= thresholdPixels &&
         Math.abs(yv - yn) <= thresholdPixels
@@ -114,7 +119,11 @@ function start(mode: Modes) {
       }
     }
 
-    const count = vertices.push(position)
+    const count = vertices.push({
+      ...position,
+      // cornerRadius: 5, // Breaks copy and cut
+      strokeJoin: 'ROUND',
+    })
     segments.push({ start: count - 1, end: count })
     if (segments[count - 2]) {
       segments[count - 2].end = count - 1
@@ -169,8 +178,6 @@ function initChecker() {
 function cancel() {
   clearInterval(lassoDrawInterval)
   figma.ui.postMessage({ action: Actions.SELECT_CANCEL })
-  vertices.length = 0
-  segments.length = 0
   if (lasso && !lasso.removed) {
     lasso.remove()
   }
@@ -179,15 +186,14 @@ function cancel() {
 async function stop() {
   clearInterval(lassoDrawInterval)
   figma.ui.postMessage({ action: Actions.SELECT_STOP })
-
   // Connect last point with first
   segments[vertices.length - 1].end = 0
   await redrawLasso()
   lasso.locked = false
+  prepareLasso()
+}
 
-  vertices.length = 0
-  segments.length = 0
-
+async function prepareLasso() {
   lasso.blendMode = 'NORMAL'
   const { hash } = await figma.createImageAsync(FILL_IMAGE)
   // TODO: stroke animation (?)
@@ -199,7 +205,6 @@ async function stop() {
       type: 'IMAGE',
     },
   ]
-
   initChecker()
   figma.currentPage.selection = [lasso]
 }
@@ -248,8 +253,9 @@ function cutNode(node: SceneNode) {
     return
   }
   let target = node
+  const isFrame = node.type === 'FRAME'
   // Because we can't cut something from frame node
-  if (node.type === 'FRAME') {
+  if (isFrame) {
     target = figma.createRectangle()
     target.fills = node.fills
     target.resize(node.width, node.height)
@@ -257,13 +263,18 @@ function cutNode(node: SceneNode) {
     node.appendChild(target)
     node.fills = []
   }
-  const index = node.parent.children.indexOf(node)
-  const subtract = figma.subtract([copyLasso(), target], node.parent, index)
+  const parent = node.parent
+  const index = parent.children.indexOf(node)
+  const subtract = figma.subtract(
+    [copyLasso(), target],
+    isFrame ? node : parent,
+    isFrame ? 0 : index,
+  )
   copyNodeProperties(subtract, target)
   // TODO: add option to enable flatten for 'CUT' mode
   // figma.flatten(
   //   [subtract],
-  //   node.parent,
+  //   parent,
   //   index,
   // )
   return copyNode(target)
@@ -308,6 +319,45 @@ function applyAction(action: Actions) {
   lasso.remove()
 }
 
+function useCurrentSelectionAsLasso() {
+  lasso = figma.currentPage.selection[0] as VectorNode
+  vertices = lasso.vectorNetwork.vertices as VectorVertex[]
+  segments = lasso.vectorNetwork.segments as VectorSegment[]
+  prepareLasso()
+}
+
+function prettify() {
+  const TOLERANCE = 10
+
+  // Initialize simplified path with the first point
+  const simplifiedVertices = [vertices[0]]
+
+  let currentPoint = null
+  let lastPoint = vertices[0]
+  for (let i = 1; i < vertices.length; i++) {
+    currentPoint = vertices[i]
+
+    // Calculate the distance between the last point and the current point
+    const distance = Math.sqrt(
+      Math.pow(currentPoint.x - lastPoint.x, 2) +
+        Math.pow(currentPoint.y - lastPoint.y, 2),
+    )
+
+    if (distance > TOLERANCE) {
+      simplifiedVertices.push(currentPoint)
+      lastPoint = currentPoint
+    }
+  }
+
+  vertices = simplifiedVertices
+  segments = simplifiedVertices.map((_, index) => {
+    return { start: index, end: index + 1 }
+  })
+  segments[segments.length - 1].end = 0
+
+  redrawLasso()
+}
+
 figma.on('selectionchange', () => {
   const checkLasso = () => {
     if (figma.currentPage.selection.length !== 1) {
@@ -347,7 +397,15 @@ figma.ui.onmessage = (message: {
       applyAction(Actions.CUT)
       break
 
-    case Actions.RESIZE:
+    case Actions.USE_AS_LASSO:
+      useCurrentSelectionAsLasso()
+      break
+
+    case Actions.PRETTIFY_LASSO:
+      prettify()
+      break
+
+    case Actions.RESIZE_UI:
       figma.ui.resize(message.details.width, message.details.height)
       break
   }

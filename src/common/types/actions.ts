@@ -7,5 +7,7 @@ export enum Actions {
   SELECT_STOP,
   COPY,
   CUT,
-  RESIZE,
+  USE_AS_LASSO,
+  PRETTIFY_LASSO,
+  RESIZE_UI,
 }

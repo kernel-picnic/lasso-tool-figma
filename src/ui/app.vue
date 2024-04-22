@@ -3,6 +3,7 @@
 
   <!-- TODO: add help -->
   <!-- TODO: write that text nodes will be flatten in 'cut' mode -->
+  <!-- TODO: optimize svgs -->
   <div v-else class="menu">
     <template v-if="showActions">
       <app-button @click="applyAction(actions.COPY)">
@@ -12,6 +13,10 @@
       <app-button @click="applyAction(actions.CUT)">
         <img src="@ui/assets/rectangular.svg" alt="" />
         Cut
+      </app-button>
+      <app-button @click="prettify">
+        <img src="@ui/assets/rectangular.svg" alt="" />
+        Prettify selection
       </app-button>
     </template>
 
@@ -29,10 +34,10 @@
         Use as Lasso
       </app-button>
       <!-- TODO -->
-      <app-button :disabled="true" @click="applyLasso">
-        <img src="@ui/assets/rectangular.svg" alt="" />
-        Use previous
-      </app-button>
+      <!--      <app-button :disabled="true" @click="usePrevious">-->
+      <!--        <img src="@ui/assets/rectangular.svg" alt="" />-->
+      <!--        Use previous-->
+      <!--      </app-button>-->
     </template>
   </div>
 </template>
@@ -72,7 +77,7 @@ export default {
           size = { width: 300, height: 300 }
         }
         postPluginMessage({
-          action: Actions.RESIZE,
+          action: Actions.RESIZE_UI,
           details: size,
         })
       },
@@ -99,15 +104,19 @@ export default {
         mode: this.mode,
       })
     },
+    applyAction(action) {
+      postPluginMessage({ action })
+    },
     applyLasso() {
-      // TODO
+      postPluginMessage({ action: Actions.USE_AS_LASSO })
+      this.showActions = true
     },
     cancel() {
       this.mode = null
       postPluginMessage({ action: Actions.CANCEL })
     },
-    applyAction(action) {
-      postPluginMessage({ action })
+    prettify() {
+      postPluginMessage({ action: Actions.PRETTIFY_LASSO })
     },
     // TODO: move to common service
     handleMessages({ data }) {
