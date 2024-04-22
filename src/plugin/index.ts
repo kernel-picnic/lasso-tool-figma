@@ -5,8 +5,8 @@ import { nearestPositionToNode } from '@plugin/utils/nearest-position-to-node'
 import { distanceToNodeSide } from '@plugin/utils/distance-to-node-side'
 import { traverseAndGetIntersections } from '@plugin/utils/traverse-and-get-intersections'
 
-const SELECTION_STROKE_BASE_WIDTH = 1.5
-const SELECTION_INTERVAL = 10
+const LASSO_STROKE_BASE_WIDTH = 1.5
+const LASSO_DRAW_INTERVAL = 10
 const AUTOSTOP_THRESHOLD = 100
 const MAGNETIC_DISTANCE = 30
 const FILL_IMAGE =
@@ -15,16 +15,16 @@ const FILL_IMAGE =
 // This shows the HTML page in "ui.html".
 figma.showUI(__html__, { themeColors: true })
 
-let selectionDrawInterval: any
-let selection: VectorNode
-let selectionChecker: any
+let lassoDrawInterval: any
+let lasso: VectorNode
+let lassoChecker: any
 let vertices: VectorVertex[] = []
 let segments: any[] = []
 // TODO: add type
 let savedPosition: any = {}
 
-const redrawSelection = (position: any = savedPosition) => {
-  return selection
+const redrawLasso = (position: any = savedPosition) => {
+  return lasso
     .setVectorNetworkAsync({
       vertices,
       segments,
@@ -36,15 +36,15 @@ const redrawSelection = (position: any = savedPosition) => {
       if (position.y < savedPosition.y) {
         savedPosition.y = position.y
       }
-      selection.x = savedPosition.x
-      selection.y = savedPosition.y
+      lasso.x = savedPosition.x
+      lasso.y = savedPosition.y
     })
 }
 
 const getMagneticPosition = (mousePosition: Vector): Vector | undefined => {
   const nodes = figma.currentPage.findAll()
   for (let node of nodes) {
-    if (node.id === selection.id) {
+    if (node.id === lasso.id) {
       continue
     }
     if (!node.absoluteBoundingBox) {
@@ -65,29 +65,34 @@ const getMagneticPosition = (mousePosition: Vector): Vector | undefined => {
     ) {
       continue
     }
+    // TODO: fix wrong position in unknown cases
     return nearestPosition
   }
 }
 
 function start(mode: Modes) {
-  selection = figma.createVector()
-  selection.cornerRadius = 100 // TODO: Not working
-  selection.strokeJoin = 'ROUND' // TODO: Not working
-  selection.blendMode = 'EXCLUSION'
-  selection.strokes = [figma.util.solidPaint('#fff')]
-  // To prevent vector selection
-  selection.locked = true
-  savedPosition = getMousePosition()
-  figma.currentPage.appendChild(selection)
+  figma.ui.postMessage({
+    action: Actions.SELECT_START,
+  })
 
-  selectionDrawInterval = setInterval(() => {
+  lasso = figma.createVector()
+  lasso.cornerRadius = 100 // TODO: Not working
+  lasso.strokeJoin = 'ROUND' // TODO: Not working
+  lasso.blendMode = 'EXCLUSION'
+  lasso.strokes = [figma.util.solidPaint('#fff')]
+  // To prevent lasso being able selectable while drawing
+  lasso.locked = true
+  savedPosition = getMousePosition()
+  figma.currentPage.appendChild(lasso)
+
+  lassoDrawInterval = setInterval(() => {
     let position = getMousePosition()
     if (!position) {
       return
     }
 
     // Dynamic zoom depending on current zoom
-    selection.strokeWeight = SELECTION_STROKE_BASE_WIDTH / figma.viewport.zoom
+    lasso.strokeWeight = LASSO_STROKE_BASE_WIDTH / figma.viewport.zoom
 
     if (mode === Modes.MAGNETIC) {
       const magneticPosition = getMagneticPosition(position)
@@ -115,8 +120,8 @@ function start(mode: Modes) {
       segments[count - 2].end = count - 1
     }
     segments[count - 1].end = count - 1
-    redrawSelection(position)
-  }, SELECTION_INTERVAL)
+    redrawLasso(position)
+  }, LASSO_DRAW_INTERVAL)
 }
 
 function cloneImageFills(
@@ -150,31 +155,43 @@ function cloneImageFills(
 }
 
 function initChecker() {
-  selectionChecker = setInterval(() => {
-    if (selection.removed) {
-      figma.ui.postMessage({
-        action: Actions.SELECT_REMOVED,
-      })
-      clearInterval(selectionChecker)
+  lassoChecker = setInterval(() => {
+    if (!lasso.removed) {
+      return
     }
+    figma.ui.postMessage({
+      action: Actions.SELECT_CANCEL,
+    })
+    clearInterval(lassoChecker)
   }, 500)
 }
 
+function cancel() {
+  clearInterval(lassoDrawInterval)
+  figma.ui.postMessage({ action: Actions.SELECT_CANCEL })
+  vertices.length = 0
+  segments.length = 0
+  if (lasso && !lasso.removed) {
+    lasso.remove()
+  }
+}
+
 async function stop() {
-  clearInterval(selectionDrawInterval)
+  clearInterval(lassoDrawInterval)
+  figma.ui.postMessage({ action: Actions.SELECT_STOP })
 
   // Connect last point with first
   segments[vertices.length - 1].end = 0
-  await redrawSelection()
-  selection.locked = false
+  await redrawLasso()
+  lasso.locked = false
 
   vertices.length = 0
   segments.length = 0
 
-  selection.blendMode = 'NORMAL'
+  lasso.blendMode = 'NORMAL'
   const { hash } = await figma.createImageAsync(FILL_IMAGE)
   // TODO: stroke animation (?)
-  selection.strokes = [
+  lasso.strokes = [
     {
       blendMode: 'NORMAL',
       imageHash: hash,
@@ -183,108 +200,155 @@ async function stop() {
     },
   ]
 
-  figma.ui.postMessage({ action: Actions.SELECT_END })
   initChecker()
-  figma.currentPage.selection = [selection]
+  figma.currentPage.selection = [lasso]
+}
+
+function copyLasso() {
+  const lassoClone = lasso.clone()
+  // Without fill intersection will not work
+  lassoClone.fills = [figma.util.solidPaint('#fff')]
+  return lassoClone
+}
+
+function copyNodeProperties(target: BooleanOperationNode, node: SceneNode) {
+  if ('fills' in node) target.fills = node.fills
+  if ('effects' in node) target.effects = node.effects
+  if ('strokes' in node) target.strokes = node.strokes
+  if ('strokeWeight' in node) target.strokeWeight = node.strokeWeight
+  target.name = node.name
+}
+
+function copyNode(node: SceneNode) {
+  let clone: SceneNode
+  if (node.type === 'FRAME') {
+    clone = figma.createRectangle()
+    // TODO: calc new gradients
+    clone.fills = node.fills
+    clone.resize(node.width, node.height)
+  } else {
+    clone = node.clone()
+  }
+  clone.relativeTransform = node.absoluteTransform // Copy position
+  const lassoClone = copyLasso()
+  const intersection = figma.intersect([lassoClone, clone], figma.currentPage)
+  if (
+    clone.type === 'RECTANGLE' &&
+    Array.isArray(clone.fills) &&
+    clone.fills.some(({ type }) => type === 'IMAGE')
+  ) {
+    clone.fills = cloneImageFills(intersection, clone)
+  }
+  copyNodeProperties(intersection, clone)
+  return figma.flatten([intersection], figma.currentPage)
+}
+
+function cutNode(node: SceneNode) {
+  if (!node.parent) {
+    return
+  }
+  let target = node
+  // Because we can't cut something from frame node
+  if (node.type === 'FRAME') {
+    target = figma.createRectangle()
+    target.fills = node.fills
+    target.resize(node.width, node.height)
+    target.name = node.name
+    node.appendChild(target)
+    node.fills = []
+  }
+  const index = node.parent.children.indexOf(node)
+  const subtract = figma.subtract([copyLasso(), target], node.parent, index)
+  copyNodeProperties(subtract, target)
+  // TODO: add option to enable flatten for 'CUT' mode
+  // figma.flatten(
+  //   [subtract],
+  //   node.parent,
+  //   index,
+  // )
+  return copyNode(target)
 }
 
 function applyAction(action: Actions) {
-  console.log('all', figma.currentPage.findAll())
-
   const intersections = traverseAndGetIntersections(
     figma.currentPage.findAll(),
-    selection,
+    lasso,
   )
 
-  console.log('inter', intersections)
-
   const result: any = []
-
   intersections.forEach((node) => {
-    if (node.id === selection.id) {
-      return
-    }
-
-    // TODO: refactoring
     try {
-      let clone: SceneNode
-      if (node.type === 'FRAME') {
-        clone = figma.createRectangle()
-        // TODO: calc new gradients
-        clone.fills = node.fills
-        clone.resize(node.width, node.height)
-      } else {
-        clone = node.clone()
+      if (node.id === lasso.id) {
+        return
       }
+      switch (action) {
+        case Actions.COPY:
+          result.push(copyNode(node))
+          break
 
-      // Copy position
-      clone.relativeTransform = node.absoluteTransform
-      figma.currentPage.appendChild(clone)
-      const selectionClone = selection.clone()
-      // Without fill intersection will not work
-      selectionClone.fills = [figma.util.solidPaint('#fff')]
-      figma.currentPage.appendChild(selectionClone)
-
-      let intersection
-      if (action === Actions.COPY) {
-        intersection = figma.intersect(
-          [selectionClone, clone],
-          figma.currentPage,
-        )
-      } else {
-        intersection = figma.subtract(
-          [selectionClone, clone],
-          figma.currentPage,
-        )
+        case Actions.CUT:
+          result.push(cutNode(node))
+          break
       }
-
-      if (
-        clone.type === 'RECTANGLE' &&
-        Array.isArray(clone.fills) &&
-        clone.fills.some(({ type }) => type === 'IMAGE')
-      ) {
-        clone.fills = cloneImageFills(intersection, clone)
-      }
-
-      if ('fills' in clone) intersection.fills = clone.fills
-      if ('effects' in clone) intersection.effects = clone.effects
-      if ('strokes' in clone) intersection.strokes = clone.strokes
-      if ('strokeWeight' in clone)
-        intersection.strokeWeight = clone.strokeWeight
-      intersection.name = clone.name
-
-      const flatNode = figma.flatten([intersection], figma.currentPage)
-      result.push(flatNode)
     } catch (e) {
       // TODO: fix unhandled promise rejection: Error: in flatten: Failed to apply flatten operation
-      console.error('Error: ', e)
+      console.warn('Error: ', e)
     }
   })
 
   console.log('result', result)
 
   if (result.length) {
+    // TODO: restore origin files order and tree
     const resultGroup = figma.group(result, figma.currentPage)
     resultGroup.name = 'Lasso Result'
+    figma.currentPage.selection = [resultGroup]
   }
+
+  lasso.remove()
 }
 
-figma.ui.onmessage = (message: { action: Actions; mode: Modes }) => {
+figma.on('selectionchange', () => {
+  const checkLasso = () => {
+    if (figma.currentPage.selection.length !== 1) {
+      return
+    }
+    const selection = figma.currentPage.selection[0]
+    if (selection.type !== 'VECTOR') {
+      return
+    }
+    return true
+  }
+  figma.ui.postMessage({
+    action: Actions.SELECT_AVAILABLE,
+    isActive: checkLasso(),
+  })
+})
+
+figma.ui.onmessage = (message: {
+  action: Actions
+  mode: Modes
+  details: any
+}) => {
   switch (message.action) {
     case Actions.START:
       start(message.mode)
       break
 
     case Actions.CANCEL:
-      stop()
+      cancel()
       break
 
     case Actions.COPY:
       applyAction(Actions.COPY)
       break
 
-    case Actions.CROP:
-      applyAction(Actions.CROP)
+    case Actions.CUT:
+      applyAction(Actions.CUT)
+      break
+
+    case Actions.RESIZE:
+      figma.ui.resize(message.details.width, message.details.height)
       break
   }
 }
