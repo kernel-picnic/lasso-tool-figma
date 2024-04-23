@@ -17,27 +17,40 @@ export default {
 
 <style scoped>
 .button {
-  background: none;
-  display: flex;
-  flex-direction: column;
-  font-weight: 500;
-  border: none;
+  background: var(--figma-color-bg);
   color: var(--figma-color-text);
+  display: flex;
+  border: none;
   align-items: center;
-  font-size: 14px;
-  padding: 0;
+  padding: 0 15px;
+  width: 100%;
+  height: 60px;
+  font-family: var(--font-family), sans-serif;
+
+  &:not(:last-child) {
+    border-bottom: 1px solid var(--figma-color-border);
+  }
 
   &:disabled {
     opacity: 0.6;
   }
 
-  :global(img) {
-    background-color: var(--figma-color-text);
-    border-radius: 10px;
-    padding: 5px;
-    margin-bottom: 10px;
-    width: 40px;
-    height: 40px;
+  &:not(:disabled):hover {
+    background-color: var(--figma-color-bg-hover);
+  }
+
+  &:global(.icon) {
+    background-color: var(--figma-color-border);
+    border-radius: 5px;
+    padding: 2px;
+    width: 30px;
+    height: 30px;
+    margin-right: 15px;
+  }
+
+  &:global(img) {
+    width: 100%;
+    height: 100%;
   }
 }
 </style>

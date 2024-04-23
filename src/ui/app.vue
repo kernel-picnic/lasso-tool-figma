@@ -5,32 +5,32 @@
   <!-- TODO: write that text nodes will be flatten in 'cut' mode -->
   <!-- TODO: optimize svgs -->
   <div v-else class="menu">
-    <template v-if="showActions">
+    <template v-if="isShowActions">
       <app-button @click="applyAction(actions.COPY)">
-        <img src="@ui/assets/rectangular.svg" alt="" />
+        <div class="icon"><img src="@ui/assets/rectangular.svg" alt="" /></div>
         Copy
       </app-button>
       <app-button @click="applyAction(actions.CUT)">
-        <img src="@ui/assets/rectangular.svg" alt="" />
+        <div class="icon"><img src="@ui/assets/rectangular.svg" alt="" /></div>
         Cut
       </app-button>
       <app-button @click="prettify">
-        <img src="@ui/assets/rectangular.svg" alt="" />
+        <div class="icon"><img src="@ui/assets/rectangular.svg" alt="" /></div>
         Prettify selection
       </app-button>
     </template>
 
     <template v-else>
       <app-button @click="setMode(modes.STANDARD)">
-        <img src="@ui/assets/standard-lasso.svg" alt="" />
+        <div class="icon"><img src="@ui/assets/standard-lasso.svg" alt="" /></div>
         Standard Lasso
       </app-button>
       <app-button @click="setMode(modes.MAGNETIC)">
-        <img src="@ui/assets/magnetic-lasso.svg" alt="" />
+        <div class="icon"><img src="@ui/assets/magnetic-lasso.svg" alt="" /></div>
         Magnetic Lasso
       </app-button>
       <app-button :disabled="!isActiveSelection" @click="applyLasso">
-        <img src="@ui/assets/rectangular.svg" alt="" />
+        <div class="icon"><img src="@ui/assets/rectangular.svg" alt="" /></div>
         Use as Lasso
       </app-button>
       <!-- TODO -->
@@ -39,15 +39,20 @@
       <!--        Use previous-->
       <!--      </app-button>-->
     </template>
-  </div>
+  </div v-else>
 </template>
 
 <script>
 import { Modes } from '@common/types/modes'
 import { Actions } from '@common/types/actions'
 import AppButton from '@ui/components/app-button.vue'
-import LassoInstruction from '@ui/components/LassoInstruction.vue'
+import LassoInstruction from '@ui/components/lasso-instruction.vue'
 import { postPluginMessage } from './utils/post-plugin-message'
+
+postPluginMessage({
+  action: Actions.RESIZE_UI,
+  details: { width: 250, height: 180 },
+})
 
 export default {
   name: 'App',
@@ -58,30 +63,13 @@ export default {
   data() {
     return {
       mode: null,
-      showActions: false,
+      isShowActions: false,
       isActiveSelection: false,
     }
   },
   computed: {
     modes: () => Modes,
     actions: () => Actions,
-  },
-  watch: {
-    mode: {
-      immediate: true,
-      handler() {
-        let size
-        if (this.mode === null) {
-          size = { width: 300, height: 130 }
-        } else {
-          size = { width: 300, height: 300 }
-        }
-        postPluginMessage({
-          action: Actions.RESIZE_UI,
-          details: size,
-        })
-      },
-    },
   },
   mounted() {
     window.addEventListener('blur', this.start)
@@ -109,7 +97,7 @@ export default {
     },
     applyLasso() {
       postPluginMessage({ action: Actions.USE_AS_LASSO })
-      this.showActions = true
+      this.isShowActions = true
     },
     cancel() {
       this.mode = null
@@ -129,12 +117,12 @@ export default {
 
         case Actions.SELECT_CANCEL:
           this.mode = null
-          this.showActions = false
+          this.isShowActions = false
           break
 
         case Actions.SELECT_STOP:
           this.mode = null
-          this.showActions = true
+          this.isShowActions = true
           break
       }
     },
@@ -143,11 +131,12 @@ export default {
 </script>
 
 <style>
-body {
-  background-color: var(--figma-color-bg);
-  color: var(--figma-color-text);
-  padding: 0;
-  margin: 0;
+:root {
+  --font-family: 'Inter';
+}
+
+.figma-dark {
+  --img-invert: 1;
 }
 
 *,
@@ -155,12 +144,16 @@ body {
 *::after {
   box-sizing: border-box;
 }
-</style>
 
-<style scoped>
-.menu {
-  display: flex;
-  gap: 20px;
-  padding: 20px;
+body {
+  background-color: var(--figma-color-bg);
+  color: var(--figma-color-text);
+  padding: 0;
+  margin: 0;
+  font-family: var(--font-family), sans-serif;
+}
+
+img {
+  filter: invert(var(--img-invert, 0));
 }
 </style>

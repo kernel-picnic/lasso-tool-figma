@@ -3,25 +3,23 @@ import { Actions } from '@common/types/actions'
 import { getMousePosition } from '@plugin/utils/get-mouse-position'
 import { nearestPositionToNode } from '@plugin/utils/nearest-position-to-node'
 import { distanceToNodeSide } from '@plugin/utils/distance-to-node-side'
-import { traverseAndGetIntersections } from '@plugin/utils/traverse-and-get-intersections'
+import { getIntersections } from '@plugin/utils/traverse-and-get-intersections'
 
 const LASSO_STROKE_BASE_WIDTH = 1.5
 const LASSO_DRAW_INTERVAL = 10
 const LASSO_AUTOSTOP_MIN_VERTICES_COUNT = 100
 const LASSO_AUTOSTOP_BASE_PIXELS_THRESHOLD = 5
+const LASSO_RESULT_GROUP_NAME = 'Lasso Result'
 const MAGNETIC_BASE_DISTANCE = 30
-const FILL_IMAGE =
-  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAFCAYAAAB8ZH1oAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAhSURBVHgBjcxBDQAACIBAdPavjBXgzW4ACS2x0wR2MY8PN64ECEABN0sAAAAASUVORK5CYII='
 
-// This shows the HTML page in "ui.html".
 figma.showUI(__html__, { themeColors: true })
 
+// TODO: add types
 let lassoDrawInterval: any
 let lasso: VectorNode
 let lassoChecker: any
 let vertices: VectorVertex[] = []
 let segments: any[] = []
-// TODO: add type
 let savedPosition: any = {}
 
 const redrawLasso = (position: any = savedPosition) => {
@@ -190,21 +188,14 @@ async function stop() {
   segments[vertices.length - 1].end = 0
   await redrawLasso()
   lasso.locked = false
+  // TODO: change text
+  figma.notify('Selection successfully made')
+  figma.ui.show()
   prepareLasso()
 }
 
 async function prepareLasso() {
-  lasso.blendMode = 'NORMAL'
-  const { hash } = await figma.createImageAsync(FILL_IMAGE)
   // TODO: stroke animation (?)
-  lasso.strokes = [
-    {
-      blendMode: 'NORMAL',
-      imageHash: hash,
-      scaleMode: 'TILE',
-      type: 'IMAGE',
-    },
-  ]
   initChecker()
   figma.currentPage.selection = [lasso]
 }
@@ -217,11 +208,16 @@ function copyLasso() {
 }
 
 function copyNodeProperties(target: BooleanOperationNode, node: SceneNode) {
-  if ('fills' in node) target.fills = node.fills
-  if ('effects' in node) target.effects = node.effects
-  if ('strokes' in node) target.strokes = node.strokes
-  if ('strokeWeight' in node) target.strokeWeight = node.strokeWeight
-  target.name = node.name
+  try {
+    target.name = node.name
+    if ('strokes' in node) target.strokes = node.strokes
+    if ('effects' in node) target.effects = node.effects
+    if ('strokeWeight' in node) target.strokeWeight = node.strokeWeight
+    if ('fills' in node) target.fills = node.fills
+  } catch (e) {
+    // TODO: fix "Cannot unwrap symbol"
+    console.warn('Error copy node properties: ', e)
+  }
 }
 
 function copyNode(node: SceneNode) {
@@ -281,42 +277,77 @@ function cutNode(node: SceneNode) {
 }
 
 function applyAction(action: Actions) {
-  const intersections = traverseAndGetIntersections(
-    figma.currentPage.findAll(),
-    lasso,
-  )
+  const intersections = getIntersections(lasso)
 
-  const result: any = []
+  const groups: Map<any, any> = new Map()
+  groups.set(figma.currentPage.id, {
+    children: [],
+    parent: figma.currentPage,
+  })
+  intersections.forEach((node) => {
+    if (!['GROUP', 'FRAME'].includes(node.type)) {
+      return
+    }
+    groups.set(node.id, {
+      children: [],
+      name: node.name,
+      parent: node.parent,
+    })
+  })
+
   intersections.forEach((node) => {
     try {
+      if (node.type === 'GROUP') {
+        return
+      }
+      if (!node.parent) {
+        return
+      }
       if (node.id === lasso.id) {
         return
       }
+      let result
       switch (action) {
         case Actions.COPY:
-          result.push(copyNode(node))
+          result = copyNode(node)
           break
-
         case Actions.CUT:
-          result.push(cutNode(node))
+          result = cutNode(node)
           break
       }
+      const key = node.parent.id
+      const group = groups.get(key)
+      groups.set(key, { ...group, children: [...group.children, result] })
     } catch (e) {
       // TODO: fix unhandled promise rejection: Error: in flatten: Failed to apply flatten operation
-      console.warn('Error: ', e)
+      console.warn('Error process intersection: ', e)
     }
   })
 
-  console.log('result', result)
-
-  if (result.length) {
-    // TODO: restore origin files order and tree
-    const resultGroup = figma.group(result, figma.currentPage)
-    resultGroup.name = 'Lasso Result'
-    figma.currentPage.selection = [resultGroup]
+  if (!groups.size) {
+    return
   }
 
+  // Restore original groups tree
+  const fillers: any = []
+  const groupsResult: any = []
+  groups.forEach(({ children, name, parent }, id) => {
+    const filler = figma.createBooleanOperation()
+    fillers.push(filler)
+    const parentGroup = groups.get(parent.id).group || figma.currentPage
+    const group = figma.group(
+      // Figma cannot create empty groups
+      children.length ? children : [filler],
+      parentGroup,
+    )
+    group.name = name || LASSO_RESULT_GROUP_NAME
+    groups.set(id, { ...groups.get(id), group })
+    groupsResult.push(group)
+  })
+  fillers.forEach((f: any) => f.remove())
+
   lasso.remove()
+  figma.notify('Done!')
 }
 
 function useCurrentSelectionAsLasso() {
@@ -375,17 +406,33 @@ figma.on('selectionchange', () => {
   })
 })
 
+figma.on('close', cancel)
+
 figma.ui.onmessage = (message: {
   action: Actions
   mode: Modes
   details: any
 }) => {
+  let notification: NotificationHandler | undefined
+
   switch (message.action) {
     case Actions.START:
+      figma.ui.hide()
+      notification = figma.notify(
+        'Select desired area and move cursor to the start point to end selecting',
+        {
+          timeout: 7000,
+          button: {
+            text: 'Cancel',
+            action: () => figma.closePlugin(),
+          },
+        },
+      )
       start(message.mode)
       break
 
     case Actions.CANCEL:
+      notification?.cancel()
       cancel()
       break
 
