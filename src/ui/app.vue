@@ -7,15 +7,15 @@
   <div v-else class="menu">
     <template v-if="isShowActions">
       <app-button @click="applyAction(actions.COPY)">
-        <div class="icon"><img src="@ui/assets/rectangular.svg" alt="" /></div>
+        <div class="icon"><img src="@ui/assets/copy.svg" alt="" /></div>
         Copy
       </app-button>
       <app-button @click="applyAction(actions.CUT)">
-        <div class="icon"><img src="@ui/assets/rectangular.svg" alt="" /></div>
+        <div class="icon"><img src="@ui/assets/cut.svg" alt="" /></div>
         Cut
       </app-button>
       <app-button @click="prettify">
-        <div class="icon"><img src="@ui/assets/rectangular.svg" alt="" /></div>
+        <div class="icon"><img src="@ui/assets/prettify.svg" alt="" /></div>
         Prettify selection
       </app-button>
     </template>

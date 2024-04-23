@@ -25,6 +25,7 @@ export default {
   padding: 0 15px;
   width: 100%;
   height: 60px;
+  font-size: 12px;
   font-family: var(--font-family), sans-serif;
 
   &:not(:last-child) {
