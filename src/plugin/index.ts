@@ -246,7 +246,7 @@ function copyNode(node: SceneNode) {
 
 function cutNode(node: SceneNode) {
   if (!node.parent) {
-    return
+    return []
   }
   let target = node
   const isFrame = node.type === 'FRAME'
@@ -273,7 +273,7 @@ function cutNode(node: SceneNode) {
   //   parent,
   //   index,
   // )
-  return copyNode(target)
+  return [copyNode(target), subtract]
 }
 
 function applyAction(action: Actions) {
@@ -306,18 +306,25 @@ function applyAction(action: Actions) {
       if (node.id === lasso.id) {
         return
       }
-      let result
+      let copy
+      let groupNode
       switch (action) {
         case Actions.COPY:
-          result = copyNode(node)
+          copy = copyNode(node)
+          groupNode = node
           break
         case Actions.CUT:
-          result = cutNode(node)
+          const [result, subtract] = cutNode(node)
+          copy = result
+          groupNode = subtract
           break
       }
-      const key = node.parent.id
+      if (!groupNode?.parent) {
+        return
+      }
+      const key = groupNode.parent.id
       const group = groups.get(key)
-      groups.set(key, { ...group, children: [...group.children, result] })
+      groups.set(key, { ...group, children: [...group.children, copy] })
     } catch (e) {
       // TODO: fix unhandled promise rejection: Error: in flatten: Failed to apply flatten operation
       console.warn('Error process intersection: ', e)
