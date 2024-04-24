@@ -6,7 +6,7 @@ const fastify = Fastify({
 
 // TODO: CORS
 
-fastify.get('/verify-license-key', async function handler(request, reply) {
+fastify.post('/verify-license-key', async function handler(request, reply) {
   const response = await fetch('https://api.gumroad.com/v2/licenses/verify', {
     method: 'POST',
     body: JSON.stringify({
