@@ -4,6 +4,8 @@ const fastify = Fastify({
   logger: true,
 })
 
+// TODO: CORS
+
 fastify.get('/verify-license-key', async function handler(request, reply) {
   const response = await fetch('https://api.gumroad.com/v2/licenses/verify', {
     method: 'POST',
@@ -16,7 +18,7 @@ fastify.get('/verify-license-key', async function handler(request, reply) {
 })
 
 try {
-  await fastify.listen({ port: 3000 })
+  await fastify.listen({ port: process.env.PORT || 3000 })
 } catch (err) {
   fastify.log.error(err)
   process.exit(1)
