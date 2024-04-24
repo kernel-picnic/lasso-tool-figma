@@ -12,6 +12,7 @@ export enum Actions {
   RESIZE_UI,
   NOTIFY,
   SET_API_KEY,
+  SHOW_API_KEY_ERROR,
   GET_API_KEY,
   PASTE_API_KEY,
   GET_ACTIONS_LIMIT,

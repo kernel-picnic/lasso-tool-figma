@@ -1,5 +1,6 @@
 import { Actions } from '@common/types/actions.ts'
 
+const API_URL = 'https://api.lasso.design'
 const API_KEY = 'apiKey'
 const ACTIONS_LIMIT_KEY = 'actionsLimit'
 const DEFAULT_ACTIONS_LIMIT = 5
@@ -28,7 +29,23 @@ function sendLimit(limit: number) {
 figma.ui.on('message', (message: { action: Actions; details: any }) => {
   switch (message.action) {
     case Actions.SET_API_KEY:
-      setApiKey(message.details.apiKey)
+      const apiKey = message.details.apiKey
+      fetch(`${API_URL}/verify`, {
+        method: 'POST',
+        body: JSON.stringify({ apiKey }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.success) {
+            setApiKey(apiKey)
+            return
+          }
+          figma.ui.postMessage({
+            action: Actions.SHOW_API_KEY_ERROR,
+            text: data.message,
+          })
+        })
+
       break
 
     case Actions.GET_API_KEY:
