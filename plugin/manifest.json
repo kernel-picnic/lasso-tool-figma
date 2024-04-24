@@ -9,7 +9,7 @@
   "editorType": ["figma"],
   "ui": "dist/index.html",
   "networkAccess": {
-    "allowedDomains": ["none"]
+    "allowedDomains": ["https://api.lasso.design"]
   },
   "permissions": ["activeusers"]
 }

@@ -19,6 +19,7 @@ export default defineConfig(({ mode }) => ({
   },
   resolve: {
     alias: {
+      '@': path.resolve('src'),
       '@common': path.resolve('src/common'),
       '@plugin': path.resolve('src/plugin'),
     },

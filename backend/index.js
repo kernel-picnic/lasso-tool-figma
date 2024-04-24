@@ -1,9 +1,10 @@
 import Fastify from 'fastify'
+
 const fastify = Fastify({
   logger: true,
 })
 
-fastify.get('/', async function handler(request, reply) {
+fastify.get('/verify-license-key', async function handler(request, reply) {
   const response = await fetch('https://api.gumroad.com/v2/licenses/verify', {
     method: 'POST',
     body: JSON.stringify({ apiKey: request.body.apiKey }),

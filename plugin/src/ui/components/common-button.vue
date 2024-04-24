@@ -1,5 +1,9 @@
 <template>
-  <button type="button" :class="['button', theme]">
+  <button
+    type="button"
+    :disabled="loading"
+    :class="['button', theme, { loading }]"
+  >
     <slot />
   </button>
 </template>
@@ -11,6 +15,9 @@ export default {
     theme: {
       type: String,
       default: 'default',
+    },
+    loading: {
+      type: Boolean,
     },
   },
 }
@@ -32,6 +39,10 @@ export default {
   border: none;
   background: none;
   cursor: pointer;
+
+  &.loading {
+    opacity: 0.6;
+  }
 
   &.default {
     color: var(--figma-color-text-oninverse);

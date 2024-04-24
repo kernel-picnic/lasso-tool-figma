@@ -15,7 +15,11 @@
       </common-button>
     </div>
 
-    <div class="text">Get full access with subscription. Cancel any time.</div>
+    <div v-if="success" class="alert success" v-html="success" />
+    <div v-else-if="error" class="alert error" v-html="error" />
+    <div v-else class="text">
+      Get full access with subscription. Cancel any time.
+    </div>
     <form class="form">
       <input
         v-model="apiKey"
@@ -23,7 +27,12 @@
         class="input"
         placeholder="Enter license key"
       />
-      <common-button theme="outline" :disabled="!apiKey" @click="checkApiKey">
+      <common-button
+        theme="outline"
+        :disabled="!apiKey"
+        :loading="loading"
+        @click="checkApiKey"
+      >
         Check
       </common-button>
     </form>
@@ -38,12 +47,12 @@
 </template>
 
 <script>
+import { API_URL } from '@/constants'
 import { Actions } from '@common/types/actions'
 import CommonButton from '@ui/components/common-button.vue'
 import { postPluginMessage } from '@ui/utils/post-plugin-message'
 
 const FREE_ACTIONS_COUNT = 5
-const API_URL = 'https://lasso.design'
 const SUBSCRIPTION_URL = 'https://piqodesign.gumroad.com/l/localy'
 
 export default {
@@ -60,9 +69,10 @@ export default {
     return {
       apiKey: '',
       totalActionsCount: FREE_ACTIONS_COUNT,
-      popupShown: false,
-      success: false,
-      error: false,
+      popupShown: true,
+      success: null,
+      error: null,
+      loading: false,
     }
   },
   created() {
@@ -84,23 +94,30 @@ export default {
       window.open(SUBSCRIPTION_URL)
     },
     checkApiKey() {
-      fetch(`${API_URL}/check-api-key`, {
+      this.success = null
+      this.error = null
+      this.loading = true
+
+      fetch(`${API_URL}/verify-license-key`, {
         method: 'POST',
         body: JSON.stringify({ apiKey: this.apiKey }),
       })
         .then((res) => res.json())
-        .then((res) => {
-          if (res.status === 200) {
-            this.success = true
+        .then((data) => {
+          if (data.success) {
+            this.success = 'License key is valid - all features unlocked'
             postPluginMessage({
               action: Actions.SET_API_KEY,
               details: { apiKey: this.apiKey },
             })
             return
           }
-
-          this.error = true
+          this.error = data.message
         })
+        .catch(() => {
+          this.error = 'Unknown error - please try again&nbsp;later'
+        })
+        .finally(() => (this.loading = false))
     },
     handleMessages({ data }) {
       const message = data.pluginMessage
@@ -160,6 +177,23 @@ export default {
 .heading {
   font-size: 14px;
   line-height: 20px;
+}
+
+.alert {
+  padding: 8px 12px;
+  border-radius: 6px;
+  line-height: 1.4;
+  margin-bottom: auto;
+
+  &.error {
+    background-color: var(--figma-color-bg-danger-secondary);
+    color: var(--figma-color-text-ondanger);
+  }
+
+  &.success {
+    background-color: var(--figma-color-bg-success-secondary);
+    color: var(--figma-color-text-onsuccess);
+  }
 }
 
 .text {
