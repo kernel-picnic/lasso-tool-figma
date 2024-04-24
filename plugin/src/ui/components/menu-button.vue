@@ -1,6 +1,7 @@
 <template>
   <button :disabled="disabled" type="button" class="button">
     <slot />
+    <img src="@ui/assets/arrow-right.svg" class="arrow" alt="" />
   </button>
 </template>
 
@@ -33,10 +34,19 @@ export default {
   }
 
   &:disabled {
-    opacity: 0.6;
+    color: var(--figma-color-text-disabled);
+
+    &:global(.icon) {
+      opacity: 0.6;
+    }
+
+    .arrow {
+      display: none;
+    }
   }
 
   &:not(:disabled):hover {
+    cursor: pointer;
     background-color: var(--figma-color-bg-hover);
   }
 
@@ -49,9 +59,16 @@ export default {
     margin-right: 15px;
   }
 
-  &:global(img) {
+  &:global(.icon > img) {
     width: 100%;
     height: 100%;
   }
+}
+
+.arrow {
+  margin-left: auto;
+  width: 10px;
+  height: 10px;
+  opacity: 0.7;
 }
 </style>

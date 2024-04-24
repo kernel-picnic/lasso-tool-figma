@@ -1,75 +1,99 @@
 <template>
-  <lasso-instruction v-if="mode !== null" @cancel="cancel" />
+  <lasso-instruction v-if="isModeSelected" @cancel="cancel" />
 
+  <!-- TODO: selection preview -->
   <!-- TODO: add help -->
   <!-- TODO: write that text nodes will be flatten in 'cut' mode -->
   <!-- TODO: optimize svgs -->
   <div v-else class="menu">
     <template v-if="isShowActions">
-      <app-button @click="applyAction(actions.COPY)">
+      <menu-button @click="applyAction(actions.COPY)">
         <div class="icon"><img src="@ui/assets/copy.svg" alt="" /></div>
         Copy
-      </app-button>
-      <app-button @click="applyAction(actions.CUT)">
+      </menu-button>
+      <menu-button @click="applyAction(actions.CUT)">
         <div class="icon"><img src="@ui/assets/cut.svg" alt="" /></div>
         Cut
-      </app-button>
-      <app-button @click="prettify">
+      </menu-button>
+      <menu-button @click="prettify">
         <div class="icon"><img src="@ui/assets/prettify.svg" alt="" /></div>
         Prettify selection
-      </app-button>
+      </menu-button>
     </template>
 
     <template v-else>
-      <app-button @click="setMode(modes.STANDARD)">
-        <div class="icon"><img src="@ui/assets/standard-lasso.svg" alt="" /></div>
+      <menu-button @click="setMode(modes.STANDARD)">
+        <div class="icon">
+          <img src="@ui/assets/standard-lasso.svg" alt="" />
+        </div>
         Standard Lasso
-      </app-button>
-      <app-button @click="setMode(modes.MAGNETIC)">
-        <div class="icon"><img src="@ui/assets/magnetic-lasso.svg" alt="" /></div>
+      </menu-button>
+      <menu-button @click="setMode(modes.MAGNETIC)">
+        <div class="icon">
+          <img src="@ui/assets/magnetic-lasso.svg" alt="" />
+        </div>
         Magnetic Lasso
-      </app-button>
-      <app-button :disabled="!isActiveSelection" @click="applyLasso">
+      </menu-button>
+      <menu-button :disabled="!isActiveSelection" @click="applyLasso">
         <div class="icon"><img src="@ui/assets/rectangular.svg" alt="" /></div>
         Use as Lasso
-      </app-button>
+        <div class="tooltip" v-if="!isActiveSelection">
+          ?
+          <div class="tooltip-content">
+            Choose any vector on&nbsp;page to&nbsp;use&nbsp;it as&nbsp;lasso
+          </div>
+        </div>
+      </menu-button>
       <!-- TODO -->
       <!--      <app-button :disabled="true" @click="usePrevious">-->
       <!--        <img src="@ui/assets/rectangular.svg" alt="" />-->
       <!--        Use previous-->
       <!--      </app-button>-->
     </template>
-  </div v-else>
+  </div>
+
+  <premium-info
+    v-if="!isModeSelected"
+    ref="premiumInfo"
+    :available-actions-count="availableActionsCount"
+  />
 </template>
 
 <script>
 import { Modes } from '@common/types/modes'
 import { Actions } from '@common/types/actions'
-import AppButton from '@ui/components/app-button.vue'
+import MenuButton from '@ui/components/menu-button.vue'
+import PremiumInfo from '@ui/components/premium-info.vue'
 import LassoInstruction from '@ui/components/lasso-instruction.vue'
 import { postPluginMessage } from './utils/post-plugin-message'
 
 postPluginMessage({
   action: Actions.RESIZE_UI,
-  details: { width: 250, height: 180 },
+  details: { width: 250, height: 210 },
 })
 
 export default {
   name: 'App',
   components: {
-    AppButton,
+    MenuButton,
     LassoInstruction,
+    PremiumInfo,
   },
   data() {
     return {
       mode: null,
       isShowActions: false,
       isActiveSelection: false,
+      showPremiumPopup: false,
+      availableActionsCount: '-',
     }
   },
   computed: {
     modes: () => Modes,
     actions: () => Actions,
+    isModeSelected() {
+      return this.mode !== null
+    },
   },
   mounted() {
     window.addEventListener('blur', this.start)
@@ -81,6 +105,14 @@ export default {
   },
   methods: {
     setMode(mode) {
+      if (!this.availableActionsCount) {
+        postPluginMessage({
+          action: Actions.NOTIFY,
+          details: 'Free actions is expired - get license key to continue',
+        })
+        this.$refs.premiumInfo.popupShown = true
+        return
+      }
       this.mode = mode
     },
     start() {
@@ -89,7 +121,7 @@ export default {
       }
       postPluginMessage({
         action: Actions.START,
-        mode: this.mode,
+        details: { mode: this.mode },
       })
     },
     applyAction(action) {
@@ -124,6 +156,10 @@ export default {
           this.mode = null
           this.isShowActions = true
           break
+
+        case Actions.PASTE_ACTIONS_LIMIT:
+          this.availableActionsCount = message.limit
+          break
       }
     },
   },
@@ -151,9 +187,58 @@ body {
   padding: 0;
   margin: 0;
   font-family: var(--font-family), sans-serif;
+  font-size: 12px;
 }
 
 img {
   filter: invert(var(--img-invert, 0));
+}
+
+a {
+  color: var(--figma-color-text);
+
+  &:hover {
+    text-decoration: none;
+  }
+}
+
+.tooltip {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--figma-color-bg-brand);
+  border-radius: 50%;
+  margin-left: auto;
+  color: var(--figma-color-text-onbrand);
+  position: relative;
+  line-height: 1;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.tooltip:hover .tooltip-content {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.tooltip-content {
+  opacity: 0;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease-in-out;
+  transform: translateY(5px);
+  pointer-events: none;
+  background-color: var(--figma-color-bg-inverse);
+  border-radius: 5px;
+  padding: 8px 12px;
+  position: absolute;
+  inset: auto 0 calc(100% + 5px) auto;
+  width: 170px;
+  text-align: left;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--figma-color-text-oninverse);
 }
 </style>

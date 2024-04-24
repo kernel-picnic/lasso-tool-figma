@@ -4,6 +4,7 @@ import { getMousePosition } from '@plugin/utils/get-mouse-position'
 import { nearestPositionToNode } from '@plugin/utils/nearest-position-to-node'
 import { distanceToNodeSide } from '@plugin/utils/distance-to-node-side'
 import { getIntersections } from '@plugin/utils/traverse-and-get-intersections'
+import './subscription.ts'
 
 const LASSO_STROKE_BASE_WIDTH = 1.5
 const LASSO_DRAW_INTERVAL = 10
@@ -21,6 +22,13 @@ let lassoChecker: any
 let vertices: VectorVertex[] = []
 let segments: any[] = []
 let savedPosition: any = {}
+
+// TODO: move to service
+let notification: NotificationHandler | undefined
+function notify(message: string, options?: NotificationOptions | undefined) {
+  notification?.cancel()
+  notification = figma.notify(message, options)
+}
 
 const redrawLasso = (position: any = savedPosition) => {
   return lasso
@@ -189,7 +197,7 @@ async function stop() {
   await redrawLasso()
   lasso.locked = false
   // TODO: change text
-  figma.notify('Selection successfully made')
+  notify('Selection successfully made')
   figma.ui.show()
   prepareLasso()
 }
@@ -354,7 +362,7 @@ function applyAction(action: Actions) {
   fillers.forEach((f: any) => f.remove())
 
   lasso.remove()
-  figma.notify('Done!')
+  notify('Done!')
 }
 
 function useCurrentSelectionAsLasso() {
@@ -415,17 +423,11 @@ figma.on('selectionchange', () => {
 
 figma.on('close', cancel)
 
-figma.ui.onmessage = (message: {
-  action: Actions
-  mode: Modes
-  details: any
-}) => {
-  let notification: NotificationHandler | undefined
-
+figma.ui.on('message', (message: { action: Actions; details: any }) => {
   switch (message.action) {
     case Actions.START:
       figma.ui.hide()
-      notification = figma.notify(
+      notify(
         'Select desired area and move cursor to the start point to end selecting',
         {
           timeout: 7000,
@@ -435,7 +437,7 @@ figma.ui.onmessage = (message: {
           },
         },
       )
-      start(message.mode)
+      start(message.details.mode)
       break
 
     case Actions.CANCEL:
@@ -462,5 +464,9 @@ figma.ui.onmessage = (message: {
     case Actions.RESIZE_UI:
       figma.ui.resize(message.details.width, message.details.height)
       break
+
+    case Actions.NOTIFY:
+      notify(message.details)
+      break
   }
-}
+})
