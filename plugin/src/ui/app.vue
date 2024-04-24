@@ -57,6 +57,7 @@
     v-if="!isModeSelected"
     ref="premiumInfo"
     :available-actions-count="availableActionsCount"
+    @verified="setVerified"
   />
 </template>
 
@@ -81,6 +82,7 @@ export default {
       isShowActions: false,
       isActiveSelection: false,
       showPremiumPopup: false,
+      verified: false,
       availableActionsCount: '-',
     }
   },
@@ -101,7 +103,7 @@ export default {
   },
   methods: {
     setMode(mode) {
-      if (!this.availableActionsCount) {
+      if (!this.verified && !this.availableActionsCount) {
         postPluginMessage({
           action: Actions.NOTIFY,
           details: 'Free actions is expired - get license key to continue',
@@ -133,6 +135,9 @@ export default {
     },
     prettify() {
       postPluginMessage({ action: Actions.PRETTIFY_LASSO })
+    },
+    setVerified() {
+      this.verified = true
     },
     // TODO: move to common service
     handleMessages({ data }) {

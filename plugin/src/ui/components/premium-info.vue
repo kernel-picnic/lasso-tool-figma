@@ -58,7 +58,7 @@ const SUBSCRIPTION_URL = 'https://piqodesign.gumroad.com/l/localy'
 export default {
   name: 'PremiumInfo',
   components: { CommonButton },
-  emits: ['close'],
+  emits: ['verified'],
   props: {
     availableActionsCount: {
       type: Number,
@@ -69,7 +69,7 @@ export default {
     return {
       apiKey: '',
       totalActionsCount: FREE_ACTIONS_COUNT,
-      popupShown: true,
+      popupShown: false,
       success: null,
       error: null,
       loading: false,
@@ -110,6 +110,7 @@ export default {
               action: Actions.SET_API_KEY,
               details: { apiKey: this.apiKey },
             })
+            this.$emit('verified')
             return
           }
           this.error = data.message
@@ -125,6 +126,7 @@ export default {
       switch (message.action) {
         case Actions.PASTE_API_KEY:
           this.apiKey = message.apiKey
+          this.checkApiKey()
           break
       }
     },
