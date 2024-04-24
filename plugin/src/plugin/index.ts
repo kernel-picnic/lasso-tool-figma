@@ -13,7 +13,7 @@ const LASSO_AUTOSTOP_BASE_PIXELS_THRESHOLD = 5
 const LASSO_RESULT_GROUP_NAME = 'Lasso Result'
 const MAGNETIC_BASE_DISTANCE = 30
 
-figma.showUI(__html__, { themeColors: true })
+figma.showUI(__html__, { themeColors: true, width: 250, height: 210 })
 
 // TODO: add types
 let lassoDrawInterval: any
@@ -183,7 +183,9 @@ function initChecker() {
 
 function cancel() {
   clearInterval(lassoDrawInterval)
+  notification?.cancel()
   figma.ui.postMessage({ action: Actions.SELECT_CANCEL })
+  figma.ui.show()
   if (lasso && !lasso.removed) {
     lasso.remove()
   }
@@ -427,13 +429,14 @@ figma.ui.on('message', (message: { action: Actions; details: any }) => {
   switch (message.action) {
     case Actions.START:
       figma.ui.hide()
+      // TODO: handle notification close event
       notify(
         'Select desired area and move cursor to the start point to end selecting',
         {
           timeout: 7000,
           button: {
             text: 'Cancel',
-            action: () => figma.closePlugin(),
+            action: cancel,
           },
         },
       )

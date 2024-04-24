@@ -40,7 +40,8 @@
         <div class="tooltip" v-if="!isActiveSelection">
           ?
           <div class="tooltip-content">
-            Choose any vector on&nbsp;page to&nbsp;use&nbsp;it as&nbsp;lasso
+            Choose any vector on&nbsp;the&nbsp;page to&nbsp;use&nbsp;it
+            as&nbsp;a&nbsp;lasso
           </div>
         </div>
       </menu-button>
@@ -66,11 +67,6 @@ import MenuButton from '@ui/components/menu-button.vue'
 import PremiumInfo from '@ui/components/premium-info.vue'
 import LassoInstruction from '@ui/components/lasso-instruction.vue'
 import { postPluginMessage } from './utils/post-plugin-message'
-
-postPluginMessage({
-  action: Actions.RESIZE_UI,
-  details: { width: 250, height: 210 },
-})
 
 export default {
   name: 'App',
@@ -235,7 +231,7 @@ a {
   padding: 8px 12px;
   position: absolute;
   inset: auto 0 calc(100% + 5px) auto;
-  width: 170px;
+  width: 140px;
   text-align: left;
   font-size: 12px;
   line-height: 1.4;
