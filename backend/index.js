@@ -13,12 +13,12 @@ fastify.post('/verify-license-key', async function handler(request, reply) {
   reply.header('Access-Control-Allow-Origin', '*')
   reply.header('Access-Control-Allow-Methods', 'POST')
 
-  console.log(process.env.PRODUCT_ID)
+  const body = JSON.parse(request.body)
   const response = await fetch('https://api.gumroad.com/v2/licenses/verify', {
     method: 'POST',
     body: JSON.stringify({
       product_id: process.env.PRODUCT_ID,
-      license_key: request.body.apiKey,
+      license_key: body.apiKey,
     }),
   })
   return await response.json()
