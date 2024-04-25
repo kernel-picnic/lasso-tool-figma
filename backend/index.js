@@ -16,6 +16,7 @@ fastify.post('/verify-license-key', async function handler(request, reply) {
   const body = JSON.parse(request.body)
   const response = await fetch('https://api.gumroad.com/v2/licenses/verify', {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       product_id: process.env.PRODUCT_ID,
       license_key: body.apiKey,

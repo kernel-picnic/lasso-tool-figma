@@ -92,6 +92,10 @@ export default {
       window.open(SUBSCRIPTION_URL)
     },
     checkApiKey() {
+      if (this.loading) {
+        return
+      }
+
       this.success = null
       this.error = null
       this.loading = true
