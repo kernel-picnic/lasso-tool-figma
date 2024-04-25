@@ -17,7 +17,9 @@ fastify.post('/verify-license-key', async function handler(request, reply) {
       license_key: request.body.apiKey,
     }),
   })
-  return await response.json()
+  const json = await response.json()
+  fastify.log.info(json)
+  return json
 })
 
 try {
