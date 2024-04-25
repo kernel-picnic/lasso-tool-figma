@@ -33,7 +33,7 @@
         :loading="loading"
         @click="checkApiKey"
       >
-        Check
+        Submit
       </common-button>
     </form>
     <common-button
@@ -41,7 +41,7 @@
       theme="primary"
       @click="openSubscriptionPage"
     >
-      Get license key
+      Get a license key
     </common-button>
   </div>
 </template>
