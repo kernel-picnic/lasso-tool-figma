@@ -5,7 +5,7 @@
   <!-- TODO: add help -->
   <!-- TODO: write that text nodes will be flatten in 'cut' mode -->
   <!-- TODO: optimize svgs -->
-  <div v-else class="menu">
+  <div v-else :class="['menu', { loading: typeof verified === 'undefined' }]">
     <template v-if="isShowActions">
       <menu-button @click="applyAction(actions.COPY)">
         <div class="icon"><img src="@ui/assets/copy.svg" alt="" /></div>
@@ -84,7 +84,7 @@ export default {
       isShowActions: false,
       isActiveSelection: false,
       showPremiumPopup: false,
-      verified: false,
+      verified: undefined,
       availableActionsCount: '-',
     }
   },
@@ -260,5 +260,18 @@ a {
   margin-left: auto;
   font-size: 10px;
   font-weight: 500;
+}
+
+.menu {
+  position: relative;
+
+  &.loading::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-color: var(--figma-color-bg);
+    opacity: 0.7;
+    z-index: 1;
+  }
 }
 </style>

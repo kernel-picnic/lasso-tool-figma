@@ -1,6 +1,10 @@
 <template>
-  <div :class="['wrapper', { warning: !availableActionsCount }]">
-    <template v-if="apiKey"> Subscription is active </template>
+  <div :class="wrapperClasses">
+    <template v-if="loading">Loading...</template>
+    <template v-else-if="verified">
+      License active
+      <a href="#" class="link" @click.prevent="showPopup">Manage</a>
+    </template>
     <template v-else>
       {{ availableActionsCount }} uses remaining
       <a href="#" class="link" @click.prevent="showPopup">Get full access</a>
@@ -15,7 +19,13 @@
       </common-button>
     </div>
 
-    <div v-if="success" class="alert success" v-html="success" />
+    <template v-if="success">
+      <div class="alert success" v-html="success" />
+      <p>
+        If you want to use current license key for another account, click
+        to&nbsp;"Detach"&nbsp;button
+      </p>
+    </template>
     <div v-else-if="error" class="alert error" v-html="error" />
     <div v-else class="text">
       Get full access with subscription. Cancel any time.
@@ -26,8 +36,19 @@
         type="text"
         class="input"
         placeholder="Enter license key"
+        :disabled="verified"
       />
       <common-button
+        v-if="verified"
+        theme="outline"
+        :disabled="!apiKey"
+        :loading="loading"
+        @click="detach"
+      >
+        Detach
+      </common-button>
+      <common-button
+        v-else
         theme="outline"
         :disabled="!apiKey"
         :loading="loading"
@@ -37,6 +58,7 @@
       </common-button>
     </form>
     <common-button
+      v-if="!verified"
       class="get-button"
       theme="primary"
       @click="openSubscriptionPage"
@@ -70,8 +92,22 @@ export default {
       popupShown: false,
       success: null,
       error: null,
-      loading: false,
+      loading: true,
+      verified: undefined,
     }
+  },
+  computed: {
+    wrapperClasses() {
+      let classes = ['wrapper']
+      if (this.loading) {
+        classes.push('loading')
+      } else if (this.verified) {
+        classes.push('verified')
+      } else if (!this.availableActionsCount) {
+        classes.push('warning')
+      }
+      return classes
+    },
   },
   created() {
     window.addEventListener('message', this.handleMessages)
@@ -91,8 +127,11 @@ export default {
     openSubscriptionPage() {
       window.open(SUBSCRIPTION_URL)
     },
+    isFirstCheck() {
+      return typeof this.verified === 'undefined'
+    },
     checkApiKey() {
-      if (this.loading) {
+      if (!this.isFirstCheck && this.loading) {
         return
       }
 
@@ -102,20 +141,57 @@ export default {
 
       fetch(`${API_URL}/verify-license-key`, {
         method: 'POST',
+        body: JSON.stringify({
+          apiKey: this.apiKey,
+          incrementUsesCount: !this.isFirstCheck,
+        }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (!data.success) {
+            this.error = data.message
+            return
+          }
+          this.success =
+            'License key is active - all features is available. Thank you!'
+          postPluginMessage({
+            action: Actions.SET_API_KEY,
+            details: {
+              apiKey: this.apiKey,
+            },
+          })
+          this.verified = true
+          this.$emit('verified')
+        })
+        .catch(() => {
+          this.error = 'Unknown error - please try again&nbsp;later'
+        })
+        .finally(() => (this.loading = false))
+    },
+    detach() {
+      if (this.loading) {
+        return
+      }
+
+      this.loading = true
+
+      fetch(`${API_URL}/detach-license-key`, {
+        method: 'POST',
         body: JSON.stringify({ apiKey: this.apiKey }),
       })
         .then((res) => res.json())
         .then((data) => {
-          if (data.success) {
-            this.success = 'License key is valid - all features unlocked'
-            postPluginMessage({
-              action: Actions.SET_API_KEY,
-              details: { apiKey: this.apiKey },
-            })
-            this.$emit('verified')
+          if (!data.success) {
+            this.error = data.message
             return
           }
-          this.error = data.message
+          this.verified = false
+          this.apiKey = ''
+          postPluginMessage({
+            action: Actions.SET_API_KEY,
+            details: { apiKey: '' },
+          })
+          this.$emit('verified')
         })
         .catch(() => {
           this.error = 'Unknown error - please try again&nbsp;later'
@@ -127,6 +203,10 @@ export default {
 
       switch (message.action) {
         case Actions.PASTE_API_KEY:
+          if (!message.apiKey) {
+            this.verified = false
+            return
+          }
           this.apiKey = message.apiKey
           this.checkApiKey()
           break
@@ -145,6 +225,14 @@ export default {
   justify-content: space-between;
   padding: 0 15px;
   line-height: 1;
+
+  &.loading {
+    background-color: var(--figma-color-bg-secondary);
+  }
+
+  &.verified {
+    background-color: var(--figma-color-bg-brand-tertiary);
+  }
 
   &.warning {
     background-color: var(--figma-color-bg-warning-tertiary);
@@ -209,7 +297,11 @@ export default {
   display: flex;
   gap: 10px;
   align-items: center;
-  margin-bottom: 10px;
+  margin: 0;
+
+  &:not(:last-child) {
+    margin-bottom: 10px;
+  }
 }
 
 .input {

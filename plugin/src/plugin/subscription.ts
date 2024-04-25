@@ -33,9 +33,6 @@ figma.ui.on('message', (message: { action: Actions; details: any }) => {
 
     case Actions.GET_API_KEY:
       getApiKey().then((apiKey) => {
-        if (!apiKey) {
-          return
-        }
         figma.ui.postMessage({
           action: Actions.PASTE_API_KEY,
           apiKey,
