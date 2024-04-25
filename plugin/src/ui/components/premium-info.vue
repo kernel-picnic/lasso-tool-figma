@@ -13,7 +13,7 @@
 
   <div v-if="popupShown" class="popup">
     <div class="header">
-      <b class="heading">Unlock access</b>
+      <b class="heading">Full access</b>
       <common-button class="back-button" theme="outline" @click="hidePopup">
         <img src="@ui/assets/close.svg" alt="" />
       </common-button>
@@ -21,7 +21,7 @@
 
     <template v-if="success">
       <div class="alert success" v-html="success" />
-      <p>
+      <p class="note">
         If you want to use current license key for another account, click
         to&nbsp;"Detach"&nbsp;button
       </p>
@@ -111,6 +111,9 @@ export default {
       }
       return classes
     },
+    isFirstCheck() {
+      return typeof this.isLicenseActive === 'undefined'
+    },
   },
   created() {
     window.addEventListener('message', this.handleMessages)
@@ -129,9 +132,6 @@ export default {
     },
     openSubscriptionPage() {
       window.open(SUBSCRIPTION_URL)
-    },
-    isFirstCheck() {
-      return typeof this.isLicenseActive === 'undefined'
     },
     checkLicenseKey() {
       if (!this.isFirstCheck && this.loading) {
@@ -156,7 +156,7 @@ export default {
             return
           }
           this.success =
-            'License key is active - all features is available. Thank you!'
+            'License key is active - all features is available. Thank you! ❤️'
           postPluginMessage({
             action: Actions.STORE_LICENSE_KEY,
             details: {
@@ -199,6 +199,7 @@ export default {
             this.handleError(data.status)
             return
           }
+          this.success = null
           this.licenseKey = ''
           postPluginMessage({
             action: Actions.STORE_LICENSE_KEY,
@@ -245,7 +246,7 @@ export default {
   }
 
   &.verified {
-    background-color: var(--figma-color-bg-brand-tertiary);
+    background-color: var(--figma-color-bg-success-tertiary);
   }
 
   &.warning {
@@ -289,21 +290,20 @@ export default {
   padding: 8px 12px;
   border-radius: 6px;
   line-height: 1.4;
-  margin-bottom: auto;
+  margin-bottom: 10px;
 
   &.error {
-    background-color: var(--figma-color-bg-danger-secondary);
+    background-color: var(--figma-color-bg-danger-tertiary);
     color: var(--figma-color-text-ondanger);
   }
 
   &.success {
-    background-color: var(--figma-color-bg-success-secondary);
+    background-color: var(--figma-color-bg-success-tertiary);
     color: var(--figma-color-text-onsuccess);
   }
 }
 
 .text {
-  margin-bottom: auto;
   line-height: 1.4;
 }
 
@@ -311,7 +311,7 @@ export default {
   display: flex;
   gap: 10px;
   align-items: center;
-  margin: 0;
+  margin: auto 0 0;
 
   &:not(:last-child) {
     margin-bottom: 10px;
@@ -327,6 +327,18 @@ export default {
   border: 1px solid var(--figma-color-border);
   font-family: var(--font-family), sans-serif;
   width: 100%;
+  text-overflow: ellipsis;
+
+  &:disabled {
+    background-color: var(--figma-color-disabled);
+    color: var(--figma-color-text-onselected-secondary);
+  }
+}
+
+.note {
+  margin: 0;
+  line-height: 1.33;
+  opacity: 0.8;
 }
 
 .get-button {
