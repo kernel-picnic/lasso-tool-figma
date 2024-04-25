@@ -13,6 +13,8 @@ fastify.post('/verify-license-key', async function handler(request, reply) {
   reply.header('Access-Control-Allow-Origin', '*')
   reply.header('Access-Control-Allow-Methods', 'POST')
 
+  let status = 'success'
+
   const body = JSON.parse(request.body)
   const response = await fetch(`${API_URL}/licenses/verify`, {
     method: 'POST',
@@ -24,10 +26,24 @@ fastify.post('/verify-license-key', async function handler(request, reply) {
     }),
   })
   const data = await response.json()
-  if (data.uses === 1) {
-    // TODO
+  if (body.incrementUsesCount && !data.uses) {
+    // Increment uses count
+    await fetch(`${API_URL}/licenses/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        product_id: process.env.PRODUCT_ID,
+        license_key: body.licenseKey,
+        increment_uses_count: true,
+      }),
+    })
+  } else {
+    status = 'already_in_use'
   }
-  return { success: data.success, message: data.message }
+  if (!data.success) {
+    status = 'invalid_key'
+  }
+  return { success: data.success, status }
 })
 
 fastify.post('/detach-license-key', async function handler(request, reply) {

@@ -5,7 +5,10 @@
   <!-- TODO: add help -->
   <!-- TODO: write that text nodes will be flatten in 'cut' mode -->
   <!-- TODO: optimize svgs -->
-  <div v-else :class="['menu', { loading: typeof verified === 'undefined' }]">
+  <div
+    v-else
+    :class="['menu', { loading: typeof isLicenseActive === 'undefined' }]"
+  >
     <template v-if="isShowActions">
       <menu-button @click="applyAction(actions.COPY)">
         <div class="icon"><img src="@ui/assets/copy.svg" alt="" /></div>
@@ -58,8 +61,9 @@
   <premium-info
     v-if="!isModeSelected"
     ref="premiumInfo"
+    :is-license-active="isLicenseActive"
     :available-actions-count="availableActionsCount"
-    @verified="setVerified"
+    @set-license-state="setLicenseActive"
   />
 </template>
 
@@ -84,7 +88,7 @@ export default {
       isShowActions: false,
       isActiveSelection: false,
       showPremiumPopup: false,
-      verified: undefined,
+      isLicenseActive: undefined,
       availableActionsCount: '-',
     }
   },
@@ -105,19 +109,6 @@ export default {
   },
   methods: {
     setMode(mode) {
-      if (!this.verified && !this.availableActionsCount) {
-        postPluginMessage({
-          action: Actions.NOTIFY,
-          details: {
-            message: 'Free actions is expired - get license key to continue',
-            options: {
-              error: true,
-            },
-          },
-        })
-        this.$refs.premiumInfo.popupShown = true
-        return
-      }
       this.mode = mode
     },
     start() {
@@ -130,6 +121,19 @@ export default {
       })
     },
     applyAction(action) {
+      if (!this.isLicenseActive && !this.availableActionsCount) {
+        postPluginMessage({
+          action: Actions.NOTIFY,
+          details: {
+            message: 'Free actions is expired - get license key to continue',
+            options: {
+              error: true,
+            },
+          },
+        })
+        this.$refs.premiumInfo.popupShown = true
+        return
+      }
       postPluginMessage({ action })
     },
     applyLasso() {
@@ -143,8 +147,8 @@ export default {
     prettify() {
       postPluginMessage({ action: Actions.PRETTIFY_LASSO })
     },
-    setVerified() {
-      this.verified = true
+    setLicenseActive(value) {
+      this.isLicenseActive = value
     },
     // TODO: move to common service
     handleMessages({ data }) {

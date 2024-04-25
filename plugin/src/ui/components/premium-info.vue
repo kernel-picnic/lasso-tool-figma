@@ -1,7 +1,7 @@
 <template>
   <div :class="wrapperClasses">
     <template v-if="loading">Loading...</template>
-    <template v-else-if="verified">
+    <template v-else-if="isLicenseActive">
       License active
       <a href="#" class="link" @click.prevent="showPopup">Manage</a>
     </template>
@@ -36,10 +36,10 @@
         type="text"
         class="input"
         placeholder="Enter license key"
-        :disabled="verified"
+        :disabled="isLicenseActive"
       />
       <common-button
-        v-if="verified"
+        v-if="isLicenseActive"
         theme="outline"
         :disabled="!apiKey"
         :loading="loading"
@@ -58,7 +58,7 @@
       </common-button>
     </form>
     <common-button
-      v-if="!verified"
+      v-if="!isLicenseActive"
       class="get-button"
       theme="primary"
       @click="openSubscriptionPage"
@@ -79,10 +79,14 @@ const SUBSCRIPTION_URL = 'https://piqodesign.gumroad.com/l/localy'
 export default {
   name: 'PremiumInfo',
   components: { CommonButton },
-  emits: ['verified'],
+  emits: ['set-license-state'],
   props: {
     availableActionsCount: {
       type: Number,
+      required: true,
+    },
+    isLicenseActive: {
+      type: Boolean,
       required: true,
     },
   },
@@ -93,7 +97,6 @@ export default {
       success: null,
       error: null,
       loading: true,
-      verified: undefined,
     }
   },
   computed: {
@@ -101,7 +104,7 @@ export default {
       let classes = ['wrapper']
       if (this.loading) {
         classes.push('loading')
-      } else if (this.verified) {
+      } else if (this.isLicenseActive) {
         classes.push('verified')
       } else if (!this.availableActionsCount) {
         classes.push('warning')
@@ -128,7 +131,7 @@ export default {
       window.open(SUBSCRIPTION_URL)
     },
     isFirstCheck() {
-      return typeof this.verified === 'undefined'
+      return typeof this.isLicenseActive === 'undefined'
     },
     checkApiKey() {
       if (!this.isFirstCheck && this.loading) {
@@ -149,7 +152,7 @@ export default {
         .then((res) => res.json())
         .then((data) => {
           if (!data.success) {
-            this.error = data.message
+            this.handleError(data.status)
             return
           }
           this.success =
@@ -160,13 +163,24 @@ export default {
               apiKey: this.apiKey,
             },
           })
-          this.verified = true
-          this.$emit('verified')
+          this.$emit('set-license-state', true)
         })
-        .catch(() => {
-          this.error = 'Unknown error - please try again&nbsp;later'
-        })
+        .catch(this.handleError)
         .finally(() => (this.loading = false))
+    },
+    handleError(status = '') {
+      this.$emit('set-license-state', false)
+      switch (status) {
+        case 'invalid_key':
+          this.error = 'Invalid license key'
+          break
+        case 'already_in_use':
+          this.error =
+            'License key already used in another account - detach it before'
+          break
+        default:
+          this.error = 'Unknown error - please try again&nbsp;later'
+      }
     },
     detach() {
       if (this.loading) {
@@ -182,16 +196,15 @@ export default {
         .then((res) => res.json())
         .then((data) => {
           if (!data.success) {
-            this.error = data.message
+            this.handleError(data.status)
             return
           }
-          this.verified = false
           this.apiKey = ''
           postPluginMessage({
             action: Actions.SET_API_KEY,
             details: { apiKey: '' },
           })
-          this.$emit('verified')
+          this.$emit('set-license-state', false)
         })
         .catch(() => {
           this.error = 'Unknown error - please try again&nbsp;later'
@@ -204,7 +217,7 @@ export default {
       switch (message.action) {
         case Actions.PASTE_API_KEY:
           if (!message.apiKey) {
-            this.verified = false
+            this.$emit('set-license-state', false)
             return
           }
           this.apiKey = message.apiKey
