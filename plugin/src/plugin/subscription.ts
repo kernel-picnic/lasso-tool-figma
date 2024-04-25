@@ -1,15 +1,15 @@
 import { Actions } from '@common/types/actions'
 
-const API_KEY = 'apiKey'
+const VARIABLE_NAME = 'licenseKey'
 const ACTIONS_LIMIT_KEY = 'actionsLimit'
 const DEFAULT_ACTIONS_LIMIT = 5
 
-function setApiKey(apiKey: string) {
-  return figma.clientStorage.setAsync(API_KEY, apiKey)
+function setLicenseKey(licenseKey: string) {
+  return figma.clientStorage.setAsync(VARIABLE_NAME, licenseKey)
 }
 
-function getApiKey() {
-  return figma.clientStorage.getAsync(API_KEY)
+function getLicenseKey() {
+  return figma.clientStorage.getAsync(VARIABLE_NAME)
 }
 
 function getActionsLimit() {
@@ -27,15 +27,15 @@ function sendLimit(limit: number) {
 
 figma.ui.on('message', (message: { action: Actions; details: any }) => {
   switch (message.action) {
-    case Actions.SET_API_KEY:
-      setApiKey(message.details.apiKey)
+    case Actions.STORE_LICENSE_KEY:
+      setLicenseKey(message.details.licenseKey)
       break
 
-    case Actions.GET_API_KEY:
-      getApiKey().then((apiKey) => {
+    case Actions.GET_LICENSE_KEY:
+      getLicenseKey().then((licenseKey) => {
         figma.ui.postMessage({
-          action: Actions.PASTE_API_KEY,
-          apiKey,
+          action: Actions.PASTE_LICENSE_KEY,
+          licenseKey,
         })
       })
       break
@@ -46,8 +46,8 @@ figma.ui.on('message', (message: { action: Actions; details: any }) => {
 
     case Actions.COPY:
     case Actions.CUT:
-      getApiKey().then((apiKey) => {
-        if (apiKey) {
+      getLicenseKey().then((licenseKey) => {
+        if (licenseKey) {
           return
         }
         getActionsLimit().then((limit) => {

@@ -8,11 +8,11 @@ const fastify = Fastify({
   logger: true,
 })
 
-async function sendRequest(url, data) {
+async function sendRequest(url, method = 'GET', data) {
   const response = await fetch(`${API_URL}/${url}`, {
-    method: 'POST',
+    method,
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
+    body: JSON.stringify({ ...data, product_id: process.env.PRODUCT_ID }),
   })
   const json = await response.json()
   fastify.log.info(json)
@@ -26,11 +26,10 @@ fastify.post('/verify-license-key', async function handler(request, reply) {
 
   const body = JSON.parse(request.body)
   const payload = {
-    product_id: process.env.PRODUCT_ID,
     license_key: body.licenseKey,
   }
 
-  const response = await sendRequest('/licenses/verify', {
+  const response = await sendRequest('/licenses/verify', 'POST', {
     ...payload,
     increment_uses_count: false,
   })
@@ -44,7 +43,7 @@ fastify.post('/verify-license-key', async function handler(request, reply) {
       return { success: false, status: 'already_in_use' }
     }
     // Increment uses count
-    await sendRequest('/licenses/verify', {
+    await sendRequest('/licenses/verify', 'POST', {
       ...payload,
       increment_uses_count: true,
     })
@@ -58,9 +57,8 @@ fastify.post('/detach-license-key', async function handler(request, reply) {
   reply.header('Access-Control-Allow-Methods', 'POST')
 
   const body = JSON.parse(request.body)
-  const response = await sendRequest('/licenses/decrement_uses_count', {
+  const response = await sendRequest('/licenses/decrement_uses_count', 'PUT', {
     access_token: process.env.ACCESS_TOKEN,
-    product_id: process.env.PRODUCT_ID,
     license_key: body.licenseKey,
   })
   return { success: response.success, message: response.message }

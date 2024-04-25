@@ -32,7 +32,7 @@
     </div>
     <form class="form">
       <input
-        v-model="apiKey"
+        v-model="licenseKey"
         type="text"
         class="input"
         placeholder="Enter license key"
@@ -41,7 +41,7 @@
       <common-button
         v-if="isLicenseActive"
         theme="outline"
-        :disabled="!apiKey"
+        :disabled="!licenseKey"
         :loading="loading"
         @click="detach"
       >
@@ -50,9 +50,9 @@
       <common-button
         v-else
         theme="outline"
-        :disabled="!apiKey"
+        :disabled="!licenseKey"
         :loading="loading"
-        @click="checkApiKey"
+        @click="checkLicenseKey"
       >
         Submit
       </common-button>
@@ -74,7 +74,7 @@ import { Actions } from '@common/types/actions'
 import CommonButton from '@ui/components/common-button.vue'
 import { postPluginMessage } from '@ui/utils/post-plugin-message'
 
-const SUBSCRIPTION_URL = 'https://piqodesign.gumroad.com/l/localy'
+const SUBSCRIPTION_URL = 'https://troynin.gumroad.com/l/lasso-tool'
 
 export default {
   name: 'PremiumInfo',
@@ -92,7 +92,7 @@ export default {
   },
   data() {
     return {
-      apiKey: '',
+      licenseKey: '',
       popupShown: false,
       success: null,
       error: null,
@@ -114,7 +114,7 @@ export default {
   },
   created() {
     window.addEventListener('message', this.handleMessages)
-    postPluginMessage({ action: Actions.GET_API_KEY })
+    postPluginMessage({ action: Actions.GET_LICENSE_KEY })
     postPluginMessage({ action: Actions.GET_ACTIONS_LIMIT })
   },
   beforeUnmount() {
@@ -133,7 +133,7 @@ export default {
     isFirstCheck() {
       return typeof this.isLicenseActive === 'undefined'
     },
-    checkApiKey() {
+    checkLicenseKey() {
       if (!this.isFirstCheck && this.loading) {
         return
       }
@@ -145,7 +145,7 @@ export default {
       fetch(`${API_URL}/verify-license-key`, {
         method: 'POST',
         body: JSON.stringify({
-          apiKey: this.apiKey,
+          licenseKey: this.licenseKey,
           incrementUsesCount: !this.isFirstCheck,
         }),
       })
@@ -158,9 +158,9 @@ export default {
           this.success =
             'License key is active - all features is available. Thank you!'
           postPluginMessage({
-            action: Actions.SET_API_KEY,
+            action: Actions.STORE_LICENSE_KEY,
             details: {
-              apiKey: this.apiKey,
+              licenseKey: this.licenseKey,
             },
           })
           this.$emit('set-license-state', true)
@@ -191,7 +191,7 @@ export default {
 
       fetch(`${API_URL}/detach-license-key`, {
         method: 'POST',
-        body: JSON.stringify({ apiKey: this.apiKey }),
+        body: JSON.stringify({ licenseKey: this.licenseKey }),
       })
         .then((res) => res.json())
         .then((data) => {
@@ -199,10 +199,10 @@ export default {
             this.handleError(data.status)
             return
           }
-          this.apiKey = ''
+          this.licenseKey = ''
           postPluginMessage({
-            action: Actions.SET_API_KEY,
-            details: { apiKey: '' },
+            action: Actions.STORE_LICENSE_KEY,
+            details: { licenseKey: '' },
           })
           this.$emit('set-license-state', false)
         })
@@ -215,13 +215,14 @@ export default {
       const message = data.pluginMessage
 
       switch (message.action) {
-        case Actions.PASTE_API_KEY:
-          if (!message.apiKey) {
+        case Actions.PASTE_LICENSE_KEY:
+          if (!message.licenseKey) {
+            this.loading = false
             this.$emit('set-license-state', false)
             return
           }
-          this.apiKey = message.apiKey
-          this.checkApiKey()
+          this.licenseKey = message.licenseKey
+          this.checkLicenseKey()
           break
       }
     },
