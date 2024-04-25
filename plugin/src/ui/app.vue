@@ -15,9 +15,11 @@
         <div class="icon"><img src="@ui/assets/cut.svg" alt="" /></div>
         Cut
       </menu-button>
-      <menu-button @click="prettify">
+      <menu-button disabled @click="prettify">
         <div class="icon"><img src="@ui/assets/prettify.svg" alt="" /></div>
         Prettify selection
+        <!-- TODO -->
+        <span class="available-soon">Soon</span>
       </menu-button>
     </template>
 
@@ -106,7 +108,12 @@ export default {
       if (!this.verified && !this.availableActionsCount) {
         postPluginMessage({
           action: Actions.NOTIFY,
-          details: 'Free actions is expired - get license key to continue',
+          details: {
+            message: 'Free actions is expired - get license key to continue',
+            options: {
+              error: true,
+            },
+          },
         })
         this.$refs.premiumInfo.popupShown = true
         return
@@ -241,5 +248,17 @@ a {
   font-size: 12px;
   line-height: 1.4;
   color: var(--figma-color-text-oninverse);
+}
+
+.available-soon {
+  background-color: var(--figma-color-bg-tertiary);
+  padding: 3px 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+  border-radius: 4px;
+  color: var(--figma-color-text);
+  margin-left: auto;
+  font-size: 10px;
+  font-weight: 500;
 }
 </style>

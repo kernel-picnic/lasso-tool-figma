@@ -469,7 +469,7 @@ figma.ui.on('message', (message: { action: Actions; details: any }) => {
       break
 
     case Actions.NOTIFY:
-      notify(message.details)
+      notify(message.details.message, message.details.options)
       break
   }
 })

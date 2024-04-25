@@ -2,8 +2,8 @@
   <div :class="['wrapper', { warning: !availableActionsCount }]">
     <template v-if="apiKey"> Subscription is active </template>
     <template v-else>
-      {{ availableActionsCount }} / {{ totalActionsCount }} actions available
-      <a href="#" class="link" @click.prevent="showPopup">Upgrade</a>
+      {{ availableActionsCount }} uses remaining
+      <a href="#" class="link" @click.prevent="showPopup">Get full access</a>
     </template>
   </div>
 
@@ -52,7 +52,6 @@ import { Actions } from '@common/types/actions'
 import CommonButton from '@ui/components/common-button.vue'
 import { postPluginMessage } from '@ui/utils/post-plugin-message'
 
-const FREE_ACTIONS_COUNT = 5
 const SUBSCRIPTION_URL = 'https://piqodesign.gumroad.com/l/localy'
 
 export default {
@@ -68,7 +67,6 @@ export default {
   data() {
     return {
       apiKey: '',
-      totalActionsCount: FREE_ACTIONS_COUNT,
       popupShown: false,
       success: null,
       error: null,
