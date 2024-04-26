@@ -8,6 +8,12 @@ const fastify = Fastify({
   logger: true,
 })
 
+fastify.addHook('preHandler', (req, reply, done) => {
+  reply.header('Access-Control-Allow-Origin', '*')
+  reply.header('Access-Control-Allow-Methods', 'POST, PUT')
+  done()
+})
+
 async function sendRequest(url, method = 'GET', data) {
   const response = await fetch(`${API_URL}/${url}`, {
     method,
@@ -20,10 +26,6 @@ async function sendRequest(url, method = 'GET', data) {
 }
 
 fastify.post('/verify-license-key', async function handler(request, reply) {
-  // TODO: move CORS to global middleware
-  reply.header('Access-Control-Allow-Origin', '*')
-  reply.header('Access-Control-Allow-Methods', 'POST')
-
   const body = JSON.parse(request.body)
   const payload = {
     license_key: body.licenseKey,
@@ -53,9 +55,6 @@ fastify.post('/verify-license-key', async function handler(request, reply) {
 })
 
 fastify.post('/detach-license-key', async function handler(request, reply) {
-  reply.header('Access-Control-Allow-Origin', '*')
-  reply.header('Access-Control-Allow-Methods', 'POST')
-
   const body = JSON.parse(request.body)
   const response = await sendRequest('/licenses/decrement_uses_count', 'PUT', {
     access_token: process.env.ACCESS_TOKEN,

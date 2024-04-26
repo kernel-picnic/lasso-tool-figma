@@ -5,10 +5,7 @@
   <!-- TODO: add help -->
   <!-- TODO: write that text nodes will be flatten in 'cut' mode -->
   <!-- TODO: optimize svgs -->
-  <div
-    v-else
-    :class="['menu', { loading: typeof isLicenseActive === 'undefined' }]"
-  >
+  <div v-else :class="['menu', { loading: isMenuLoading }]">
     <template v-if="isShowActions">
       <menu-button @click="applyAction(actions.COPY)">
         <div class="icon"><img src="@ui/assets/copy.svg" alt="" /></div>
@@ -27,6 +24,8 @@
     </template>
 
     <template v-else>
+      <!-- TODO -->
+      <!--      <div>Advanced settings</div>-->
       <menu-button @click="setMode(modes.STANDARD)">
         <div class="icon">
           <img src="@ui/assets/standard-lasso.svg" alt="" />
@@ -45,7 +44,7 @@
         <div class="tooltip" v-if="!isActiveSelection">
           ?
           <div class="tooltip-content">
-            Choose any vector on&nbsp;the&nbsp;page to&nbsp;use&nbsp;it
+            Choose any <i>vector</i> on&nbsp;the&nbsp;page to&nbsp;use&nbsp;it
             as&nbsp;a&nbsp;lasso
           </div>
         </div>
@@ -59,7 +58,7 @@
   </div>
 
   <premium-info
-    v-if="!isModeSelected"
+    v-show="!isModeSelected"
     ref="premiumInfo"
     :is-license-active="isLicenseActive"
     :available-actions-count="availableActionsCount"
@@ -98,6 +97,9 @@ export default {
     isModeSelected() {
       return this.mode !== null
     },
+    isMenuLoading() {
+      return this.isShowActions && typeof this.isLicenseActive === 'undefined'
+    },
   },
   mounted() {
     window.addEventListener('blur', this.start)
@@ -125,7 +127,7 @@ export default {
         postPluginMessage({
           action: Actions.NOTIFY,
           details: {
-            message: 'Free actions is expired - get license key to continue',
+            message: 'No free actions left - get license key to continue',
             options: {
               error: true,
             },

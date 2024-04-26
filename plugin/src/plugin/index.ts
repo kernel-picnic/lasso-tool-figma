@@ -1,19 +1,20 @@
 import { Modes } from '@common/types/modes'
 import { Actions } from '@common/types/actions'
 import { getMousePosition } from '@plugin/utils/get-mouse-position'
-import { nearestPositionToNode } from '@plugin/utils/nearest-position-to-node'
-import { distanceToNodeSide } from '@plugin/utils/distance-to-node-side'
 import { getIntersections } from '@plugin/utils/traverse-and-get-intersections'
-import './subscription.ts'
+import { getMagneticPosition } from '@plugin/utils/get-magnetic-position'
+import { cloneImageFills } from '@plugin/utils/clone-image-fills'
+import { checkSelection } from '@plugin/check-selection'
+import './subscription'
 
 const LASSO_STROKE_BASE_WIDTH = 1.5
 const LASSO_DRAW_INTERVAL = 10
 const LASSO_AUTOSTOP_MIN_VERTICES_COUNT = 100
 const LASSO_AUTOSTOP_BASE_PIXELS_THRESHOLD = 5
 const LASSO_RESULT_GROUP_NAME = 'Lasso Result'
-const MAGNETIC_BASE_DISTANCE = 30
 
 figma.showUI(__html__, { themeColors: true, width: 250, height: 210 })
+checkSelection()
 
 // TODO: add types
 let lassoDrawInterval: any
@@ -48,36 +49,6 @@ const redrawLasso = (position: any = savedPosition) => {
     })
 }
 
-const getMagneticPosition = (mousePosition: Vector): Vector | undefined => {
-  const nodes = figma.currentPage.findAll()
-  const magneticDistance = MAGNETIC_BASE_DISTANCE / figma.viewport.zoom
-  for (let node of nodes) {
-    if (node.id === lasso.id) {
-      continue
-    }
-    if (!node.absoluteBoundingBox) {
-      continue
-    }
-    const distance = distanceToNodeSide(mousePosition, node.absoluteBoundingBox)
-    if (distance.x > magneticDistance || distance.y > magneticDistance) {
-      continue
-    }
-    const nearestPosition = nearestPositionToNode(
-      mousePosition,
-      node.absoluteBoundingBox,
-    )
-    if (
-      // If user already over node, node side can be far
-      Math.abs(nearestPosition.x - mousePosition.x) > magneticDistance ||
-      Math.abs(nearestPosition.y - mousePosition.y) > magneticDistance
-    ) {
-      continue
-    }
-    // TODO: fix wrong position in unknown cases
-    return nearestPosition
-  }
-}
-
 function start(mode: Modes) {
   figma.ui.postMessage({
     action: Actions.SELECT_START,
@@ -105,7 +76,7 @@ function start(mode: Modes) {
     lasso.strokeWeight = LASSO_STROKE_BASE_WIDTH / figma.viewport.zoom
 
     if (mode === Modes.MAGNETIC) {
-      const magneticPosition = getMagneticPosition(position)
+      const magneticPosition = getMagneticPosition(position, lasso.id)
       if (magneticPosition) {
         position = magneticPosition
       }
@@ -139,36 +110,6 @@ function start(mode: Modes) {
   }, LASSO_DRAW_INTERVAL)
 }
 
-function cloneImageFills(
-  intersection: BooleanOperationNode,
-  node: RectangleNode,
-): ImagePaint[] {
-  if (!Array.isArray(node.fills)) {
-    return []
-  }
-
-  const cloneFill = (fill: ImagePaint) => {
-    const newFill = JSON.parse(JSON.stringify(fill))
-    newFill.scaleMode = 'CROP'
-    const scaleX = intersection.width / node.width
-    const scaleY = intersection.height / node.height
-    const translateX = (intersection.x - node.x) / node.width
-    const translateY = (intersection.y - node.y) / node.height
-    newFill.imageTransform = [
-      [scaleX, 0, translateX],
-      [0, scaleY, translateY],
-    ]
-    return newFill
-  }
-
-  return node.fills.map((fill: ImagePaint) => {
-    if (fill.type === 'IMAGE') {
-      return cloneFill(fill)
-    }
-    return fill
-  })
-}
-
 function initChecker() {
   lassoChecker = setInterval(() => {
     if (!lasso.removed) {
@@ -194,12 +135,11 @@ function cancel() {
 async function stop() {
   clearInterval(lassoDrawInterval)
   figma.ui.postMessage({ action: Actions.SELECT_STOP })
-  // Connect last point with first
+  // Connect the last point with the first
   segments[vertices.length - 1].end = 0
   await redrawLasso()
   lasso.locked = false
-  // TODO: change text
-  notify('Selection successfully made')
+  notify('Selection has been successfully completed')
   figma.ui.show()
   prepareLasso()
 }
@@ -214,6 +154,8 @@ function copyLasso() {
   const lassoClone = lasso.clone()
   // Without fill intersection will not work
   lassoClone.fills = [figma.util.solidPaint('#fff')]
+  // Fix position if lasso in frame
+  lassoClone.relativeTransform = lasso.absoluteTransform
   return lassoClone
 }
 
@@ -345,32 +287,32 @@ function applyAction(action: Actions) {
     return
   }
 
+  // Figma cannot create empty groups - use filler for it
+  const filler = figma.createBooleanOperation()
   // Restore original groups tree
-  const fillers: any = []
-  const groupsResult: any = []
   groups.forEach(({ children, name, parent }, id) => {
-    const filler = figma.createBooleanOperation()
-    fillers.push(filler)
     const parentGroup = groups.get(parent.id).group || figma.currentPage
     const group = figma.group(
-      // Figma cannot create empty groups
       children.length ? children : [filler],
       parentGroup,
     )
     group.name = name || LASSO_RESULT_GROUP_NAME
     groups.set(id, { ...groups.get(id), group })
-    groupsResult.push(group)
   })
-  fillers.forEach((f: any) => f.remove())
 
-  lasso.remove()
+  filler.remove()
+  lasso.remove() // TODO: don't remove "Use as Lasso" selected vector
   notify('Done!')
 }
 
 function useCurrentSelectionAsLasso() {
   lasso = figma.currentPage.selection[0] as VectorNode
-  vertices = lasso.vectorNetwork.vertices as VectorVertex[]
-  segments = lasso.vectorNetwork.segments as VectorSegment[]
+  vertices = JSON.parse(
+    JSON.stringify(lasso.vectorNetwork.vertices),
+  ) as VectorVertex[]
+  segments = JSON.parse(
+    JSON.stringify(lasso.vectorNetwork.segments),
+  ) as VectorSegment[]
   prepareLasso()
 }
 
@@ -405,23 +347,6 @@ function prettify() {
 
   redrawLasso()
 }
-
-figma.on('selectionchange', () => {
-  const checkLasso = () => {
-    if (figma.currentPage.selection.length !== 1) {
-      return
-    }
-    const selection = figma.currentPage.selection[0]
-    if (selection.type !== 'VECTOR') {
-      return
-    }
-    return true
-  }
-  figma.ui.postMessage({
-    action: Actions.SELECT_AVAILABLE,
-    isActive: checkLasso(),
-  })
-})
 
 figma.on('close', cancel)
 

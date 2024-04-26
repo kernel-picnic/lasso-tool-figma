@@ -1,70 +1,72 @@
 <template>
-  <div :class="wrapperClasses">
-    <template v-if="loading">Loading...</template>
-    <template v-else-if="isLicenseActive">
-      License active
-      <a href="#" class="link" @click.prevent="showPopup">Manage</a>
-    </template>
-    <template v-else>
-      {{ availableActionsCount }} uses remaining
-      <a href="#" class="link" @click.prevent="showPopup">Get full access</a>
-    </template>
-  </div>
-
-  <div v-if="popupShown" class="popup">
-    <div class="header">
-      <b class="heading">Full access</b>
-      <common-button class="back-button" theme="outline" @click="hidePopup">
-        <img src="@ui/assets/close.svg" alt="" />
-      </common-button>
+  <div>
+    <div :class="wrapperClasses">
+      <template v-if="loading">Loading...</template>
+      <template v-else-if="isLicenseActive">
+        License active
+        <a href="#" class="link" @click.prevent="showPopup">Manage</a>
+      </template>
+      <template v-else>
+        {{ availableActionsCount }} uses remaining
+        <a href="#" class="link" @click.prevent="showPopup">Get full access</a>
+      </template>
     </div>
 
-    <template v-if="success">
-      <div class="alert success" v-html="success" />
-      <p class="note">
-        If you want to use current license key for another account, click
-        to&nbsp;"Detach"&nbsp;button
-      </p>
-    </template>
-    <div v-else-if="error" class="alert error" v-html="error" />
-    <div v-else class="text">
-      Get full access with subscription. Cancel any time.
+    <div v-if="popupShown" class="popup">
+      <div class="header">
+        <b class="heading">Full access</b>
+        <common-button class="back-button" theme="outline" @click="hidePopup">
+          <img src="@ui/assets/close.svg" alt="" />
+        </common-button>
+      </div>
+
+      <template v-if="success">
+        <div class="alert success" v-html="success" />
+        <p class="note">
+          If you want to use current license key for another account, click
+          to&nbsp;"Detach"&nbsp;button
+        </p>
+      </template>
+      <div v-else-if="error" class="alert error" v-html="error" />
+      <div v-else class="text">
+        Get license key to use Lasso Tool. Paid <b>once</b> - use unlimited.
+      </div>
+      <form class="form">
+        <input
+          v-model="licenseKey"
+          type="text"
+          class="input"
+          placeholder="Enter license key"
+          :disabled="isLicenseActive"
+        />
+        <common-button
+          v-if="isLicenseActive"
+          theme="outline"
+          :disabled="!licenseKey"
+          :loading="loading"
+          @click="detach"
+        >
+          Detach
+        </common-button>
+        <common-button
+          v-else
+          theme="outline"
+          :disabled="!licenseKey"
+          :loading="loading"
+          @click="checkLicenseKey"
+        >
+          Submit
+        </common-button>
+      </form>
+      <common-button
+        v-if="!isLicenseActive"
+        class="get-button"
+        theme="primary"
+        @click="openSubscriptionPage"
+      >
+        Get a license key
+      </common-button>
     </div>
-    <form class="form">
-      <input
-        v-model="licenseKey"
-        type="text"
-        class="input"
-        placeholder="Enter license key"
-        :disabled="isLicenseActive"
-      />
-      <common-button
-        v-if="isLicenseActive"
-        theme="outline"
-        :disabled="!licenseKey"
-        :loading="loading"
-        @click="detach"
-      >
-        Detach
-      </common-button>
-      <common-button
-        v-else
-        theme="outline"
-        :disabled="!licenseKey"
-        :loading="loading"
-        @click="checkLicenseKey"
-      >
-        Submit
-      </common-button>
-    </form>
-    <common-button
-      v-if="!isLicenseActive"
-      class="get-button"
-      theme="primary"
-      @click="openSubscriptionPage"
-    >
-      Get a license key
-    </common-button>
   </div>
 </template>
 
