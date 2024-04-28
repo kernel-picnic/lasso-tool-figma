@@ -3,8 +3,10 @@ import { Actions } from '@common/types/actions'
 import { getMousePosition } from '@plugin/utils/get-mouse-position'
 import { getIntersections } from '@plugin/utils/traverse-and-get-intersections'
 import { getMagneticPosition } from '@plugin/utils/get-magnetic-position'
-import { cloneImageFills } from '@plugin/utils/clone-image-fills'
+import { cloneImageFill } from '@plugin/utils/clone-image-fill'
+import { cloneGradientFill } from '@plugin/utils/clone-gradient-fill'
 import { checkSelection } from '@plugin/check-selection'
+import { deepClone } from '@plugin/utils/deep-clone'
 import './subscription'
 
 const LASSO_STROKE_BASE_WIDTH = 1.5
@@ -176,22 +178,29 @@ function copyNode(node: SceneNode) {
   let clone: SceneNode
   if (node.type === 'FRAME') {
     clone = figma.createRectangle()
-    // TODO: calc new gradients
     clone.fills = node.fills
     clone.resize(node.width, node.height)
   } else {
     clone = node.clone()
   }
+
   clone.relativeTransform = node.absoluteTransform // Copy position
   const lassoClone = copyLasso()
   const intersection = figma.intersect([lassoClone, clone], figma.currentPage)
-  if (
-    clone.type === 'RECTANGLE' &&
-    Array.isArray(clone.fills) &&
-    clone.fills.some(({ type }) => type === 'IMAGE')
-  ) {
-    clone.fills = cloneImageFills(intersection, clone)
+
+  if ('fills' in clone && Array.isArray(clone.fills)) {
+    clone.fills = clone.fills.map((fill) => {
+      switch (fill.type) {
+        case 'IMAGE':
+          return cloneImageFill(intersection, clone, fill)
+        case 'GRADIENT_LINEAR':
+          return cloneGradientFill(intersection, clone, fill)
+        default:
+          return fill
+      }
+    })
   }
+
   copyNodeProperties(intersection, clone)
   return figma.flatten([intersection], figma.currentPage)
 }
@@ -307,12 +316,8 @@ function applyAction(action: Actions) {
 
 function useCurrentSelectionAsLasso() {
   lasso = figma.currentPage.selection[0] as VectorNode
-  vertices = JSON.parse(
-    JSON.stringify(lasso.vectorNetwork.vertices),
-  ) as VectorVertex[]
-  segments = JSON.parse(
-    JSON.stringify(lasso.vectorNetwork.segments),
-  ) as VectorSegment[]
+  vertices = deepClone(lasso.vectorNetwork.vertices) as VectorVertex[]
+  segments = deepClone(lasso.vectorNetwork.segments) as VectorSegment[]
   prepareLasso()
 }
 

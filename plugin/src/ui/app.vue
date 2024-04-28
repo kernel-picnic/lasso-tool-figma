@@ -21,6 +21,11 @@
         <!-- TODO -->
         <span class="available-soon">Soon</span>
       </menu-button>
+      <!-- TODO -->
+      <!--      <app-button @click="cancel">-->
+      <!--        <img src="@ui/assets/cancel.svg" alt="" />-->
+      <!--        Cancel-->
+      <!--      </app-button>-->
     </template>
 
     <template v-else>
@@ -104,12 +109,19 @@ export default {
   mounted() {
     window.addEventListener('blur', this.start)
     window.addEventListener('message', this.handleMessages)
+    window.addEventListener('keydown', this.handleKeyDown)
   },
   beforeUnmount() {
     window.removeEventListener('blur', this.start)
     window.removeEventListener('message', this.handleMessages)
+    window.removeEventListener('keydown', this.handleKeyDown)
   },
   methods: {
+    handleKeyDown(e) {
+      if (e.key === 'Escape') {
+        this.mode = null
+      }
+    },
     setMode(mode) {
       this.mode = mode
     },
