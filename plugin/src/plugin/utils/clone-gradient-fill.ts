@@ -1,6 +1,31 @@
 import { multiply, inv } from 'mathjs'
 import { deepClone } from '@plugin/utils/deep-clone'
 
+const identityMatrixHandlePositions = [
+  [0, 1, 0],
+  [0.5, 0.5, 1],
+  [1, 1, 1],
+]
+
+function convertGradientHandlesToTransform(
+  gradientHandlePositions: [
+    { x: number; y: number },
+    { x: number; y: number },
+    { x: number; y: number },
+  ],
+): Transform {
+  const gh = gradientHandlePositions
+  const d = [
+    [gh[0].x, gh[1].x, gh[2].x],
+    [gh[0].y, gh[1].y, gh[2].y],
+    [1, 1, 1],
+  ]
+  const o = identityMatrixHandlePositions
+  const m = multiply(o, inv(d))
+
+  return [m[0] as [number, number, number], m[1] as [number, number, number]]
+}
+
 function applyMatrixToPoint(matrix: number[][], point: number[]) {
   return [
     point[0] * matrix[0][0] + point[1] * matrix[0][1] + matrix[0][2],
@@ -18,74 +43,47 @@ function extractLinearGradientParamsFromTransform(
   const startEnd = [
     [0, 0.5],
     [1, 0.5],
+    [0, 1],
   ].map((p) => applyMatrixToPoint(mxInv, p))
   return {
     start: [startEnd[0][0] * shapeWidth, startEnd[0][1] * shapeHeight],
     end: [startEnd[1][0] * shapeWidth, startEnd[1][1] * shapeHeight],
+    rotation: [startEnd[2][0] * shapeWidth, startEnd[2][1] * shapeHeight],
   }
-}
-
-// TODO: add types
-function getProjectedLength(rectWidth, rectHeight, radians) {
-  return (
-    Math.abs(rectWidth * Math.cos(radians)) +
-    Math.abs(rectHeight * Math.sin(radians))
-  )
 }
 
 export const cloneGradientFill = (
   intersection: BooleanOperationNode,
-  node: Rect,
+  node: SceneNode,
   fill: GradientPaint,
 ): GradientPaint => {
   const newFill = deepClone<GradientPaint>(fill)
-  const nodeGradientParams = extractLinearGradientParamsFromTransform(
+  const extract = extractLinearGradientParamsFromTransform(
     node.width,
     node.height,
     newFill.gradientTransform,
   )
-  const intersectionGradientParams = extractLinearGradientParamsFromTransform(
-    intersection.width,
-    intersection.height,
-    newFill.gradientTransform,
-  )
-  console.log('exact', nodeGradientParams, intersectionGradientParams)
-  const rad = 0
-  // const rad = Math.atan2(
-  //   newFill.gradientTransform[1][0],
-  //   newFill.gradientTransform[0][0],
-  // )
-  const nodeGradientLength = getProjectedLength(node.width, node.height, rad)
-  const intersectionGradientLength = getProjectedLength(
-    intersection.width,
-    intersection.height,
-    rad,
-  )
-  const scale = intersectionGradientLength / nodeGradientLength
-  console.log('scale', scale)
-  const offsetX =
-    intersectionGradientParams.start[0] / (nodeGradientParams.start[0] || 1)
-  const offsetY =
-    Math.max(nodeGradientParams.start[1], intersectionGradientParams.start[1]) /
-      (Math.min(
-        nodeGradientParams.start[1],
-        intersectionGradientParams.start[1],
-      ) || 1) -
-    1
-  console.log('offset', offsetX, offsetY)
-  const result = multiply(
-    [...newFill.gradientTransform, [0, 0, 1]],
-    [
-      [scale, 0, 0],
-      [0, scale, 0],
-      [0, 0, 1],
-    ],
-    [
-      [1, 0, offsetX],
-      [0, 1, offsetY],
-      [0, 0, 1],
-    ],
-  )
-  newFill.gradientTransform = [result[0], result[1]]
+  const topOffset = intersection.y - node.y
+  const leftOffset = intersection.x - node.x
+  const x1 = (extract.start[0] - leftOffset) / intersection.width
+  const y1 = (extract.start[1] - topOffset) / intersection.height
+  const x2 = (extract.end[0] - leftOffset) / intersection.width
+  const y2 = (extract.end[1] - topOffset) / intersection.height
+  const x3 = (extract.rotation[0] - leftOffset) / intersection.width
+  const y3 = (extract.rotation[1] - topOffset) / intersection.height
+  newFill.gradientTransform = convertGradientHandlesToTransform([
+    {
+      x: x1,
+      y: y1,
+    },
+    {
+      x: x2,
+      y: y2,
+    },
+    {
+      x: x3,
+      y: y3,
+    },
+  ])
   return newFill
 }

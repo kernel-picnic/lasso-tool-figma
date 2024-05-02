@@ -370,6 +370,7 @@ figma.ui.on('message', (message: { action: Actions; details: any }) => {
           },
         },
       )
+      // TODO: handle "Unable to establish connection to Figma after 10 seconds. Please check your internet connection."
       start(message.details.mode)
       break
 
