@@ -4,7 +4,8 @@ import { getMousePosition } from '@plugin/utils/get-mouse-position'
 import { getIntersections } from '@plugin/utils/traverse-and-get-intersections'
 import { getMagneticPosition } from '@plugin/utils/get-magnetic-position'
 import { cloneImageFill } from '@plugin/utils/clone-image-fill'
-import { cloneGradientFill } from '@plugin/utils/clone-gradient-fill'
+import { cloneLinearGradientFill } from '@plugin/utils/clone-linear-gradient-fill'
+import { cloneRadialGradientFill } from '@plugin/utils/clone-radial-gradient-fill'
 import { checkSelection } from '@plugin/check-selection'
 import { deepClone } from '@plugin/utils/deep-clone'
 import './subscription'
@@ -194,7 +195,9 @@ function copyNode(node: SceneNode) {
         case 'IMAGE':
           return cloneImageFill(intersection, clone, fill)
         case 'GRADIENT_LINEAR':
-          return cloneGradientFill(intersection, clone, fill)
+          return cloneLinearGradientFill(intersection, clone, fill)
+        case 'GRADIENT_RADIAL':
+          return cloneRadialGradientFill(intersection, clone, fill)
         default:
           return fill
       }
