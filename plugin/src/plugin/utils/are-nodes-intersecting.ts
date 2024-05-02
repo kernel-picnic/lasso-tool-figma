@@ -12,6 +12,7 @@ export const areNodesIntersecting = (
   return (
     hasBoundingBox(node) &&
     isIntersected(node.absoluteBoundingBox, selectedNode.absoluteBoundingBox) &&
+    // TODO: add option to handle invisible nodes (?)
     'visible' in node &&
     node.visible
   )

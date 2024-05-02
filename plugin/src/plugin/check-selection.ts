@@ -1,6 +1,11 @@
 import { Actions } from '@common/types/actions'
 
 function check() {
+  // TODO
+  // figma.ui.postMessage({
+  //   action: Actions.SELECT_CHANGED,
+  // })
+
   const isSuitableForLasso = () => {
     if (figma.currentPage.selection.length !== 1) {
       return

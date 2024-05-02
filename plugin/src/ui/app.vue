@@ -5,7 +5,11 @@
   <!-- TODO: add help -->
   <!-- TODO: write that text nodes will be flatten in 'cut' mode -->
   <!-- TODO: optimize svgs -->
-  <div v-else :class="['menu', { loading: isMenuLoading }]">
+  <div v-else :class="['menu', { disabled: isMenuDisabled }]">
+    <div v-if="isActionRunning" class="loader">
+      <img src="@ui/assets/loader.svg" alt="" />
+    </div>
+
     <template v-if="isShowActions">
       <menu-button @click="applyAction(actions.COPY)">
         <div class="icon"><img src="@ui/assets/copy.svg" alt="" /></div>
@@ -93,6 +97,7 @@ export default {
       isActiveSelection: false,
       showPremiumPopup: false,
       isLicenseActive: undefined,
+      isActionRunning: false,
       availableActionsCount: '-',
     }
   },
@@ -102,7 +107,7 @@ export default {
     isModeSelected() {
       return this.mode !== null
     },
-    isMenuLoading() {
+    isMenuDisabled() {
       return this.isShowActions && typeof this.isLicenseActive === 'undefined'
     },
   },
@@ -148,6 +153,7 @@ export default {
         this.$refs.premiumInfo.popupShown = true
         return
       }
+      this.isActionRunning = true
       postPluginMessage({ action })
     },
     applyLasso() {
@@ -183,8 +189,18 @@ export default {
           this.isShowActions = true
           break
 
+        case Actions.ACTION_FINISHED:
+          this.isActionRunning = false
+          break
+
         case Actions.PASTE_ACTIONS_LIMIT:
           this.availableActionsCount = message.limit
+          break
+
+        case Actions.SELECT_CHANGED:
+          if (this.isShowActions) {
+            this.isShowActions = false
+          }
           break
       }
     },
@@ -283,12 +299,35 @@ a {
 .menu {
   position: relative;
 
-  &.loading::before {
+  &.disabled::before {
     content: '';
     position: absolute;
     inset: 0;
     background-color: var(--figma-color-bg);
     opacity: 0.7;
+    z-index: 1;
+  }
+}
+
+.loader {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-color: var(--figma-color-bg);
+    opacity: 0.7;
+    z-index: 1;
+  }
+
+  img {
+    width: 30px;
+    height: 30px;
     z-index: 1;
   }
 }

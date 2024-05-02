@@ -16,13 +16,15 @@ const LASSO_AUTOSTOP_MIN_VERTICES_COUNT = 100
 const LASSO_AUTOSTOP_BASE_PIXELS_THRESHOLD = 5
 const LASSO_RESULT_GROUP_NAME = 'Lasso Result'
 
+const CONTAINER_NODE_TYPES = ['GROUP', 'FRAME', 'SECTION', 'INSTANCE']
+type CONTAINER_NODE = GroupNode | FrameNode | SectionNode | InstanceNode
+
 figma.showUI(__html__, { themeColors: true, width: 250, height: 210 })
 checkSelection()
 
 // TODO: add types
 let lassoDrawInterval: any
 let lasso: VectorNode
-let lassoChecker: any
 let vertices: VectorVertex[] = []
 let segments: any[] = []
 let savedPosition: any = {}
@@ -113,6 +115,7 @@ function start(mode: Modes) {
   }, LASSO_DRAW_INTERVAL)
 }
 
+let lassoChecker: any
 function initChecker() {
   lassoChecker = setInterval(() => {
     if (!lasso.removed) {
@@ -137,17 +140,18 @@ function cancel() {
 
 async function stop() {
   clearInterval(lassoDrawInterval)
-  figma.ui.postMessage({ action: Actions.SELECT_STOP })
+  prepareLasso()
+  // Timeout to fire SELECT_STOP after SELECT_CHANGED
+  setTimeout(() => figma.ui.postMessage({ action: Actions.SELECT_STOP }))
   // Connect the last point with the first
   segments[vertices.length - 1].end = 0
   await redrawLasso()
   lasso.locked = false
   notify('Selection has been successfully completed')
   figma.ui.show()
-  prepareLasso()
 }
 
-async function prepareLasso() {
+function prepareLasso() {
   // TODO: stroke animation (?)
   initChecker()
   figma.currentPage.selection = [lasso]
@@ -162,32 +166,70 @@ function copyLasso() {
   return lassoClone
 }
 
-function copyNodeProperties(target: BooleanOperationNode, node: SceneNode) {
+function copyNodeProperties(target: any, node: SceneNode) {
   try {
-    target.name = node.name
-    if ('strokes' in node) target.strokes = node.strokes
-    if ('effects' in node) target.effects = node.effects
-    if ('strokeWeight' in node) target.strokeWeight = node.strokeWeight
-    if ('fills' in node) target.fills = node.fills
+    const properties = [
+      'name',
+      'visible',
+      'strokes',
+      'effects',
+      'strokeWeight',
+      'fills',
+      'topLeftRadius',
+      'topRightRadius',
+      'bottomLeftRadius',
+      'bottomRightRadius',
+    ]
+    properties.forEach((property) => {
+      if (property in node) {
+        // TODO: add types
+        // @ts-ignore
+        target[property] = node[property]
+      }
+    })
   } catch (e) {
     // TODO: fix "Cannot unwrap symbol"
     console.warn('Error copy node properties: ', e)
   }
 }
 
+function applyParentsCornerRadius(clone: SceneNode, node: SceneNode) {
+  let traverse: any = node
+  // TODO: write general traverse function
+  while (traverse?.parent) {
+    traverse = traverse.parent
+    if (!('clipsContent' in traverse)) {
+      continue
+    }
+    if (!traverse.clipsContent) {
+      continue
+    }
+    const rect = figma.createRectangle()
+    rect.resize(traverse.width, traverse.height)
+    rect.relativeTransform = traverse.absoluteTransform
+    copyNodeProperties(rect, traverse)
+    clone = figma.flatten(
+      [figma.intersect([rect, clone], figma.currentPage)],
+      figma.currentPage,
+    )
+  }
+  copyNodeProperties(clone, node)
+  return clone
+}
+
 function copyNode(node: SceneNode) {
   let clone: SceneNode
-  if (node.type === 'FRAME') {
+  if (CONTAINER_NODE_TYPES.includes(node.type)) {
     clone = figma.createRectangle()
-    clone.fills = node.fills
+    copyNodeProperties(clone, node)
     clone.resize(node.width, node.height)
   } else {
     clone = node.clone()
   }
 
   clone.relativeTransform = node.absoluteTransform // Copy position
-  const lassoClone = copyLasso()
-  const intersection = figma.intersect([lassoClone, clone], figma.currentPage)
+  clone = applyParentsCornerRadius(clone, node)
+  const intersection = figma.intersect([copyLasso(), clone], figma.currentPage)
 
   if ('fills' in clone && Array.isArray(clone.fills)) {
     clone.fills = clone.fills.map((fill) => {
@@ -215,22 +257,26 @@ function cutNode(node: SceneNode) {
     return []
   }
   let target = node
-  const isFrame = node.type === 'FRAME'
-  // Because we can't cut something from frame node
-  if (isFrame) {
+  const isVirtualNode = CONTAINER_NODE_TYPES.includes(node.type)
+  // Because we can't cut something from
+  // frames, sections and other similar nodes
+  if (isVirtualNode) {
+    node = node as CONTAINER_NODE
     target = figma.createRectangle()
-    target.fills = node.fills
     target.resize(node.width, node.height)
     target.name = node.name
     node.appendChild(target)
-    node.fills = []
+    if ('fills' in node) {
+      target.fills = node.fills
+      node.fills = []
+    }
   }
-  const parent = node.parent
+  const parent = node.parent || figma.currentPage
   const index = parent.children.indexOf(node)
   const subtract = figma.subtract(
     [copyLasso(), target],
-    isFrame ? node : parent,
-    isFrame ? 0 : index,
+    isVirtualNode ? (node as CONTAINER_NODE) : parent,
+    isVirtualNode ? 0 : index,
   )
   copyNodeProperties(subtract, target)
   // TODO: add option to enable flatten for 'CUT' mode
@@ -251,14 +297,20 @@ function applyAction(action: Actions) {
     parent: figma.currentPage,
   })
   intersections.forEach((node) => {
-    if (!['GROUP', 'FRAME'].includes(node.type)) {
-      return
+    let traverse: any = node
+    // Using traverse because intersection can
+    // be contained in node that wasn't intersected
+    while (traverse?.parent) {
+      traverse = traverse.parent
+      if (!CONTAINER_NODE_TYPES.includes(traverse.type)) {
+        continue
+      }
+      groups.set(traverse.id, {
+        children: [],
+        name: traverse.name,
+        parent: traverse.parent,
+      })
     }
-    groups.set(node.id, {
-      children: [],
-      name: node.name,
-      parent: node.parent,
-    })
   })
 
   intersections.forEach((node) => {
@@ -270,6 +322,13 @@ function applyAction(action: Actions) {
         return
       }
       if (node.id === lasso.id) {
+        return
+      }
+      // If node is visible, but parent is invisible
+      if (
+        'absoluteRenderBounds' in node &&
+        node.absoluteRenderBounds === null
+      ) {
         return
       }
       let copy
@@ -293,30 +352,35 @@ function applyAction(action: Actions) {
       groups.set(key, { ...group, children: [...group.children, copy] })
     } catch (e) {
       // TODO: fix unhandled promise rejection: Error: in flatten: Failed to apply flatten operation
-      console.warn('Error process intersection: ', e)
+      console.warn('Error process intersection: ', node.name, e)
     }
   })
 
-  if (!groups.size) {
-    return
+  if (groups.size) {
+    try {
+      // Figma cannot create empty groups - use filler for it
+      const filler = figma.createBooleanOperation()
+      // Restore original groups tree
+      groups.forEach(({ children, name, parent }, id) => {
+        const parentGroup = groups.get(parent.id).group || figma.currentPage
+        const group = figma.group(
+          children.length ? children : [filler],
+          parentGroup,
+        )
+        group.name = name || LASSO_RESULT_GROUP_NAME
+        groups.set(id, { ...groups.get(id), group })
+      })
+      filler.remove()
+    } catch (e) {
+      console.warn('Error creating group: ', e)
+    }
   }
 
-  // Figma cannot create empty groups - use filler for it
-  const filler = figma.createBooleanOperation()
-  // Restore original groups tree
-  groups.forEach(({ children, name, parent }, id) => {
-    const parentGroup = groups.get(parent.id).group || figma.currentPage
-    const group = figma.group(
-      children.length ? children : [filler],
-      parentGroup,
-    )
-    group.name = name || LASSO_RESULT_GROUP_NAME
-    groups.set(id, { ...groups.get(id), group })
-  })
-
-  filler.remove()
   lasso.remove() // TODO: don't remove "Use as Lasso" selected vector
   notify('Done!')
+  figma.ui.postMessage({
+    action: Actions.ACTION_FINISHED,
+  })
 }
 
 function useCurrentSelectionAsLasso() {
