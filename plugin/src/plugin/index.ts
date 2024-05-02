@@ -197,6 +197,8 @@ function copyNode(node: SceneNode) {
         case 'GRADIENT_LINEAR':
           return cloneLinearGradientFill(intersection, clone, fill)
         case 'GRADIENT_RADIAL':
+        case 'GRADIENT_ANGULAR':
+        case 'GRADIENT_DIAMOND':
           return cloneRadialGradientFill(intersection, clone, fill)
         default:
           return fill
