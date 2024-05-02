@@ -9,6 +9,7 @@ const identityMatrixHandlePositions = [
   [1, 1, 1],
 ]
 
+// https://gist.github.com/yagudaev/0c2b89674c6aee8b38cd379752ef58d0
 function extractLinearGradientParamsFromTransform(
   shapeWidth: number,
   shapeHeight: number,
