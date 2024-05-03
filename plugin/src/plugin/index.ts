@@ -19,7 +19,7 @@ const LASSO_RESULT_GROUP_NAME = 'Lasso Result'
 const CONTAINER_NODE_TYPES = ['GROUP', 'FRAME', 'SECTION', 'INSTANCE']
 type CONTAINER_NODE = GroupNode | FrameNode | SectionNode | InstanceNode
 
-figma.showUI(__html__, { themeColors: true, width: 250, height: 210 })
+figma.showUI(__html__, { themeColors: true, width: 250, height: 240 })
 checkSelection()
 
 // TODO: add types

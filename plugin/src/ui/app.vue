@@ -1,4 +1,9 @@
 <template>
+  <div v-if="!isModeSelected" class="topbar">
+    <span class="badge">Beta</span>
+    <a href="#" @click.prevent="writeMessage">Help</a>
+  </div>
+
   <lasso-instruction v-if="isModeSelected" @cancel="cancel" />
 
   <!-- TODO: selection preview -->
@@ -7,6 +12,7 @@
   <!-- TODO: optimize svgs -->
   <div v-else :class="['menu', { disabled: isMenuDisabled }]">
     <div v-if="isActionRunning" class="loader">
+      <!-- TODO: fix loader freeze -->
       <img src="@ui/assets/loader.svg" alt="" />
     </div>
 
@@ -66,9 +72,9 @@
     </template>
   </div>
 
-  <premium-info
+  <license-info
     v-show="!isModeSelected"
-    ref="premiumInfo"
+    ref="licenseInfo"
     :is-license-active="isLicenseActive"
     :available-actions-count="availableActionsCount"
     @set-license-state="setLicenseActive"
@@ -79,7 +85,7 @@
 import { Modes } from '@common/types/modes'
 import { Actions } from '@common/types/actions'
 import MenuButton from '@ui/components/menu-button.vue'
-import PremiumInfo from '@ui/components/premium-info.vue'
+import LicenseInfo from '@ui/components/license-info.vue'
 import LassoInstruction from '@ui/components/lasso-instruction.vue'
 import { postPluginMessage } from './utils/post-plugin-message'
 
@@ -88,14 +94,14 @@ export default {
   components: {
     MenuButton,
     LassoInstruction,
-    PremiumInfo,
+    LicenseInfo,
   },
   data() {
     return {
       mode: null,
       isShowActions: false,
       isActiveSelection: false,
-      showPremiumPopup: false,
+      showLicensePopup: false,
       isLicenseActive: undefined,
       isActionRunning: false,
       availableActionsCount: '-',
@@ -150,7 +156,7 @@ export default {
             },
           },
         })
-        this.$refs.premiumInfo.popupShown = true
+        this.$refs.licenseInfo.popupShown = true
         return
       }
       this.isActionRunning = true
@@ -169,6 +175,10 @@ export default {
     },
     setLicenseActive(value) {
       this.isLicenseActive = value
+    },
+    writeMessage() {
+      // TODO: move to constant
+      window.open('mailto:hi@lasso.design')
     },
     // TODO: move to common service
     handleMessages({ data }) {
@@ -242,6 +252,28 @@ a {
   &:hover {
     text-decoration: none;
   }
+}
+
+.topbar {
+  border-bottom: 1px solid var(--figma-color-border);
+  padding: 0 12px;
+  height: 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: var(--figma-color-text-secondary);
+
+  a {
+    color: var(--figma-color-text-secondary);
+  }
+}
+
+.badge {
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  font-size: 10px;
+  font-weight: 600;
 }
 
 .tooltip {

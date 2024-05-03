@@ -8,6 +8,8 @@ const fastify = Fastify({
   logger: true,
 })
 
+// TODO: add DB to checking account and API key match
+
 fastify.addHook('preHandler', (req, reply, done) => {
   reply.header('Access-Control-Allow-Origin', '*')
   reply.header('Access-Control-Allow-Methods', 'POST, PUT')
@@ -24,6 +26,10 @@ async function sendRequest(url, method = 'GET', data) {
   fastify.log.info(json)
   return json
 }
+
+fastify.get('/health', (req, res) => {
+  return { status: 'ok' }
+})
 
 fastify.post('/verify-license-key', async function handler(request, reply) {
   const body = JSON.parse(request.body)

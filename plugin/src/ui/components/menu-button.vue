@@ -23,7 +23,7 @@ export default {
   display: flex;
   border: none;
   align-items: center;
-  padding: 0 15px;
+  padding: 0 12px;
   width: 100%;
   height: 60px;
   font-size: 12px;
@@ -56,7 +56,7 @@ export default {
     padding: 2px;
     width: 30px;
     height: 30px;
-    margin-right: 15px;
+    margin-right: 12px;
   }
 
   &:global(.icon > img) {

@@ -339,7 +339,7 @@ export default {
 
 .note {
   margin: 0;
-  line-height: 1.33;
+  line-height: 1.5;
   opacity: 0.8;
 }
 
