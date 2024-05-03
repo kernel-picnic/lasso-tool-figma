@@ -172,7 +172,7 @@ function copyLasso() {
   return lassoClone
 }
 
-function copyNodeProperties(target: any, node: SceneNode) {
+function copyNodeProperties(target: SceneNode, node: SceneNode) {
   try {
     const properties = [
       'name',
@@ -187,7 +187,7 @@ function copyNodeProperties(target: any, node: SceneNode) {
       'bottomRightRadius',
     ]
     properties.forEach((property) => {
-      if (property in node) {
+      if (property in node && property in target) {
         // TODO: add types
         // @ts-ignore
         target[property] = node[property]
@@ -195,7 +195,7 @@ function copyNodeProperties(target: any, node: SceneNode) {
     })
   } catch (e) {
     // TODO: fix "Cannot unwrap symbol"
-    console.warn('Error copy node properties: ', e)
+    console.warn('Error copy node properties: ', node.name, e)
   }
 }
 
