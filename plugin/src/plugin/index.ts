@@ -291,27 +291,7 @@ function cutNode(node: SceneNode) {
 function applyAction(action: Actions) {
   const intersections = getIntersections(lasso)
 
-  const groups: Map<any, any> = new Map()
-  groups.set(figma.currentPage.id, {
-    children: [],
-    parent: figma.currentPage,
-  })
-  intersections.forEach((node) => {
-    let traverse: any = node
-    // Using traverse because intersection can
-    // be contained in node that wasn't intersected
-    while (traverse?.parent) {
-      traverse = traverse.parent
-      if (!CONTAINER_NODE_TYPES.includes(traverse.type)) {
-        continue
-      }
-      groups.set(traverse.id, {
-        children: [],
-        name: traverse.name,
-        parent: traverse.parent,
-      })
-    }
-  })
+  const result: any = []
 
   intersections.forEach((node) => {
     try {
@@ -332,45 +312,26 @@ function applyAction(action: Actions) {
         return
       }
       let copy
-      let groupNode
       switch (action) {
         case Actions.COPY:
           copy = copyNode(node)
-          groupNode = node
           break
         case Actions.CUT:
-          const [result, subtract] = cutNode(node)
+          const [result] = cutNode(node)
           copy = result
-          groupNode = subtract
           break
       }
-      if (!groupNode?.parent) {
-        return
-      }
-      const key = groupNode.parent.id
-      const group = groups.get(key)
-      groups.set(key, { ...group, children: [...group.children, copy] })
+      result.push(copy)
     } catch (e) {
       // TODO: fix unhandled promise rejection: Error: in flatten: Failed to apply flatten operation
       console.warn('Error process intersection: ', node.name, e)
     }
   })
 
-  if (groups.size) {
+  if (result.length) {
     try {
-      // Figma cannot create empty groups - use filler for it
-      const filler = figma.createBooleanOperation()
-      // Restore original groups tree
-      groups.forEach(({ children, name, parent }, id) => {
-        const parentGroup = groups.get(parent.id).group || figma.currentPage
-        const group = figma.group(
-          children.length ? children : [filler],
-          parentGroup,
-        )
-        group.name = name || LASSO_RESULT_GROUP_NAME
-        groups.set(id, { ...groups.get(id), group })
-      })
-      filler.remove()
+      const resultGroup = figma.group(result, figma.currentPage)
+      resultGroup.name = LASSO_RESULT_GROUP_NAME
     } catch (e) {
       console.warn('Error creating group: ', e)
     }
