@@ -295,6 +295,7 @@ function applyAction(action: Actions) {
   groups.set(figma.currentPage.id, {
     children: [],
     parent: figma.currentPage,
+    index: figma.currentPage.children.length - 1, // First index
   })
   intersections.forEach((node) => {
     let traverse: any = node
@@ -309,6 +310,10 @@ function applyAction(action: Actions) {
         children: [],
         name: traverse.name,
         parent: traverse.parent,
+        index:
+          traverse.parent.children.length -
+          1 -
+          traverse.parent.children.indexOf(traverse),
       })
     }
   })
@@ -347,9 +352,28 @@ function applyAction(action: Actions) {
       if (!groupNode?.parent) {
         return
       }
-      const key = groupNode.parent.id
+      const parent = CONTAINER_NODE_TYPES.includes(node.type)
+        ? node
+        : node.parent
+      const key = parent.id
+      // TODO
       const group = groups.get(key)
-      groups.set(key, { ...group, children: [...group.children, copy] })
+      let index = CONTAINER_NODE_TYPES.includes(node.type)
+        ? 0
+        : parent.children.length - 1 - parent.children.indexOf(node)
+      group.children.splice(index, 0, copy)
+      console.log(
+        CONTAINER_NODE_TYPES.includes(node.type),
+        node.name,
+        group.name,
+        index,
+        copy,
+        group.children,
+      )
+      groups.set(key, {
+        ...group,
+        children: group.children,
+      })
     } catch (e) {
       // TODO: fix unhandled promise rejection: Error: in flatten: Failed to apply flatten operation
       console.warn('Error process intersection: ', node.name, e)
@@ -361,11 +385,26 @@ function applyAction(action: Actions) {
       // Figma cannot create empty groups - use filler for it
       const filler = figma.createBooleanOperation()
       // Restore original groups tree
-      groups.forEach(({ children, name, parent }, id) => {
+      groups.forEach(({ children, name, parent, index }, id) => {
         const parentGroup = groups.get(parent.id).group || figma.currentPage
+
+        let finalIndex =
+          index < parentGroup.children.length
+            ? index
+            : parentGroup.children.length - 1
+        console.log(
+          name,
+          parentGroup.children.length,
+          index,
+          finalIndex,
+          parent,
+          children,
+          parentGroup,
+        )
         const group = figma.group(
           children.length ? children : [filler],
           parentGroup,
+          finalIndex || undefined,
         )
         group.name = name || LASSO_RESULT_GROUP_NAME
         groups.set(id, { ...groups.get(id), group })
