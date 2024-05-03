@@ -12,7 +12,7 @@ import './subscription'
 
 const LASSO_STROKE_BASE_WIDTH = 1.5
 const LASSO_DRAW_INTERVAL = 10
-const LASSO_AUTOSTOP_MIN_VERTICES_COUNT = 100
+const LASSO_AUTOSTOP_MIN_VERTICES_COUNT = 50
 const LASSO_AUTOSTOP_BASE_PIXELS_THRESHOLD = 15
 const LASSO_RESULT_GROUP_NAME = 'Lasso Result'
 
@@ -87,7 +87,13 @@ function start(mode: Modes) {
       }
     }
 
-    if (vertices.length > LASSO_AUTOSTOP_MIN_VERTICES_COUNT) {
+    if (
+      vertices.length >
+      Math.min(
+        LASSO_AUTOSTOP_MIN_VERTICES_COUNT,
+        LASSO_AUTOSTOP_MIN_VERTICES_COUNT / figma.viewport.zoom,
+      )
+    ) {
       const { x: xv, y: yv } = vertices[0]
       const { x: xn, y: yn } = position
       const thresholdPixels =
