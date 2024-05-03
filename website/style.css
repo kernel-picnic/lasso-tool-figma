@@ -1,0 +1,143 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+
+/* Reset CSS */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Inter, sans-serif;
+}
+
+/* Global Styles */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Header */
+.header {
+  color: #fff;
+  padding: 20px 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header img {
+  height: 40px;
+  margin-right: 20px;
+  box-shadow: 0 3px 20px rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  font-size: 20px;
+  text-decoration: none;
+  color: #000;
+}
+
+.btn-download {
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #4CAF50;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 5px;
+  margin-left: 20px;
+}
+
+/* Hero Section */
+.hero {
+  padding: 100px 0;
+  text-align: center;
+}
+
+.hero h1 {
+  font-size: 36px;
+}
+
+/* Features Section */
+.features {
+  padding: 100px 0;
+}
+
+.features h2 {
+  text-align: center;
+}
+
+.feature {
+  margin-top: 50px;
+}
+
+.feature h3 {
+  font-size: 24px;
+}
+
+/* Pricing Plans Section */
+.pricing-plans {
+  background-color: #f2f2f2;
+  padding: 100px 0;
+  text-align: center;
+}
+
+.plan {
+  display: inline-block;
+  margin: 0 20px;
+}
+
+.plan h3 {
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+
+/* CTA Section */
+.cta {
+  background-color: #333;
+  color: #fff;
+  padding: 100px 0;
+  text-align: center;
+}
+
+.cta h2 {
+  font-size: 36px;
+  margin-bottom: 50px;
+}
+
+/* Footer */
+footer {
+  background-color: #333;
+  color: #fff;
+  padding: 20px 0;
+  text-align: center;
+}
+
+footer img {
+  height: 40px;
+}
+
+/* Media Queries */
+@media (max-width: 768px) {
+  header img {
+    height: 30px;
+  }
+
+  .hero h1 {
+    font-size: 28px;
+  }
+
+  .feature h3 {
+    font-size: 20px;
+  }
+
+  .plan h3 {
+    font-size: 20px;
+  }
+
+  .cta h2 {
+    font-size: 28px;
+  }
+}

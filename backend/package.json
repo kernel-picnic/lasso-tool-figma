@@ -1,0 +1,21 @@
+{
+  "name": "lasso-tool-backend",
+  "private": true,
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@fastify/cors": "^9.0.1",
+    "@fastify/env": "^4.3.0",
+    "fastify": "^4.26.2"
+  },
+  "devDependencies": {
+    "prettier": "3.2.5"
+  }
+}
