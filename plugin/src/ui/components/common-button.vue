@@ -31,7 +31,7 @@ export default {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 8px 12px;
+  padding: 8px var(--padding);
   height: 32px;
   max-height: 32px;
   font-size: 12px;

@@ -23,7 +23,7 @@ export default {
   display: flex;
   border: none;
   align-items: center;
-  padding: 0 12px;
+  padding: 0 var(--padding);
   width: 100%;
   height: 60px;
   font-size: 12px;

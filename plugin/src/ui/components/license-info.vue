@@ -15,9 +15,7 @@
     <div v-if="popupShown" class="popup">
       <div class="header">
         <b class="heading">Full access</b>
-        <common-button class="back-button" theme="outline" @click="hidePopup">
-          <img src="@ui/assets/close.svg" alt="" />
-        </common-button>
+        <close-button @click="hidePopup" />
       </div>
 
       <template v-if="success">
@@ -72,15 +70,16 @@
 
 <script>
 import { API_URL } from '@/constants'
+import { postPluginMessage } from '@ui/utils/post-plugin-message'
 import { Actions } from '@common/types/actions'
 import CommonButton from '@ui/components/common-button.vue'
-import { postPluginMessage } from '@ui/utils/post-plugin-message'
+import CloseButton from '@ui/components/close-button.vue'
 
 const SUBSCRIPTION_URL = 'https://troynin.gumroad.com/l/lasso-tool'
 
 export default {
   name: 'PremiumInfo',
-  components: { CommonButton },
+  components: { CloseButton, CommonButton },
   emits: ['set-license-state'],
   props: {
     availableActionsCount: {
@@ -240,7 +239,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 15px;
+  padding: 0 var(--padding);
   line-height: 1;
 
   &.loading {
@@ -260,7 +259,7 @@ export default {
   position: fixed;
   inset: 0;
   background-color: var(--figma-color-bg);
-  padding: 15px;
+  padding: var(--padding);
   display: flex;
   flex-direction: column;
 }
@@ -272,36 +271,24 @@ export default {
   margin-bottom: 10px;
 }
 
-.back-button {
-  width: 20px;
-  height: 20px;
-  padding: 5px;
-
-  img {
-    width: 100%;
-    height: 100%;
-  }
-}
-
 .heading {
   font-size: 14px;
   line-height: 20px;
 }
 
 .alert {
-  padding: 8px 12px;
+  padding: 8px var(--padding);
   border-radius: 6px;
   line-height: 1.4;
   margin-bottom: 10px;
+  color: var(--figma-color-text-hover);
 
   &.error {
     background-color: var(--figma-color-bg-danger-tertiary);
-    color: var(--figma-color-text-ondanger);
   }
 
   &.success {
     background-color: var(--figma-color-bg-success-tertiary);
-    color: var(--figma-color-text-onsuccess);
   }
 }
 
@@ -321,7 +308,7 @@ export default {
 }
 
 .input {
-  padding: 8px 12px;
+  padding: 8px var(--padding);
   height: 32px;
   max-height: 32px;
   font-size: 12px;
@@ -329,7 +316,6 @@ export default {
   border: 1px solid var(--figma-color-border);
   font-family: var(--font-family), sans-serif;
   width: 100%;
-  text-overflow: ellipsis;
 
   &:disabled {
     background-color: var(--figma-color-disabled);

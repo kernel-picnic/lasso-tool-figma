@@ -1,8 +1,9 @@
 <template>
   <div v-if="!isModeSelected" class="topbar">
     <span class="badge">Beta</span>
-    <a href="#" @click.prevent="writeMessage">Help</a>
+    <a href="#" @click.prevent="openHelp">Help</a>
   </div>
+  <help-info v-if="showHelpPopup" @close="closeHelp" />
 
   <lasso-instruction v-if="isModeSelected" @cancel="cancel" />
 
@@ -84,14 +85,16 @@
 <script>
 import { Modes } from '@common/types/modes'
 import { Actions } from '@common/types/actions'
+import { postPluginMessage } from '@ui/utils/post-plugin-message'
 import MenuButton from '@ui/components/menu-button.vue'
 import LicenseInfo from '@ui/components/license-info.vue'
 import LassoInstruction from '@ui/components/lasso-instruction.vue'
-import { postPluginMessage } from './utils/post-plugin-message'
+import HelpInfo from '@ui/components/help-info.vue'
 
 export default {
   name: 'App',
   components: {
+    HelpInfo,
     MenuButton,
     LassoInstruction,
     LicenseInfo,
@@ -101,6 +104,7 @@ export default {
       mode: null,
       isShowActions: false,
       isActiveSelection: false,
+      showHelpPopup: false,
       showLicensePopup: false,
       isLicenseActive: undefined,
       isActionRunning: false,
@@ -176,9 +180,11 @@ export default {
     setLicenseActive(value) {
       this.isLicenseActive = value
     },
-    writeMessage() {
-      // TODO: move to constant
-      window.open('mailto:hi@lasso.design')
+    openHelp() {
+      this.showHelpPopup = true
+    },
+    closeHelp() {
+      this.showHelpPopup = false
     },
     // TODO: move to common service
     handleMessages({ data }) {
@@ -221,6 +227,7 @@ export default {
 <style>
 :root {
   --font-family: 'Inter';
+  --padding: 12px;
 }
 
 .figma-dark {
@@ -230,6 +237,7 @@ export default {
 *,
 *::before,
 *::after {
+  margin: 0;
   box-sizing: border-box;
 }
 
@@ -246,6 +254,12 @@ img {
   filter: invert(var(--img-invert, 0));
 }
 
+p {
+  &:not(:last-child) {
+    margin-bottom: 10px;
+  }
+}
+
 a {
   color: var(--figma-color-text);
 
@@ -256,7 +270,7 @@ a {
 
 .topbar {
   border-bottom: 1px solid var(--figma-color-border);
-  padding: 0 12px;
+  padding: 0 var(--padding);
   height: 30px;
   display: flex;
   justify-content: space-between;
@@ -306,7 +320,7 @@ a {
   pointer-events: none;
   background-color: var(--figma-color-bg-inverse);
   border-radius: 5px;
-  padding: 8px 12px;
+  padding: 8px var(--padding);
   position: absolute;
   inset: auto 0 calc(100% + 5px) auto;
   width: 140px;
