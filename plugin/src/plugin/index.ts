@@ -1,5 +1,6 @@
 import { Modes } from '@common/types/modes'
 import { Actions } from '@common/types/actions'
+import { Mutable } from '@common/types/mutable'
 import { getMousePosition } from '@plugin/utils/get-mouse-position'
 import { getIntersections } from '@plugin/utils/traverse-and-get-intersections'
 import { getMagneticPosition } from '@plugin/utils/get-magnetic-position'
@@ -22,12 +23,11 @@ type CONTAINER_NODE = GroupNode | FrameNode | SectionNode | InstanceNode
 figma.showUI(__html__, { themeColors: true, width: 250, height: 240 })
 checkSelection()
 
-// TODO: add types
-let lassoDrawInterval: any
+let lassoDrawInterval: any // TODO: add type
 let lasso: VectorNode
 let vertices: VectorVertex[] = []
-let segments: any[] = []
-let savedPosition: any = {}
+let segments: any[] = [] // TODO: add type
+let savedPosition: Mutable<Vector> | null = null
 
 // TODO: move to service
 let notification: NotificationHandler | undefined
@@ -36,13 +36,16 @@ function notify(message: string, options?: NotificationOptions | undefined) {
   notification = figma.notify(message, options)
 }
 
-const redrawLasso = (position: any = savedPosition) => {
+const redrawLasso = (position = savedPosition) => {
   return lasso
     .setVectorNetworkAsync({
       vertices,
       segments,
     })
     .then(() => {
+      if (!savedPosition || !position) {
+        return
+      }
       if (position.x < savedPosition.x) {
         savedPosition.x = position.x
       }
@@ -68,10 +71,16 @@ function start(mode: Modes) {
   lasso.strokes = [figma.util.solidPaint('#fff')]
   // To prevent lasso being able selectable while drawing
   lasso.locked = true
-  savedPosition = getMousePosition()
   figma.currentPage.appendChild(lasso)
 
   lassoDrawInterval = setInterval(() => {
+    // Assign saved position here, because if user will
+    // move cursor too faster, first position will be too
+    // far from the next position and lasso will be displaced
+    if (!savedPosition) {
+      savedPosition = getMousePosition()
+    }
+
     let position = getMousePosition()
     if (!position) {
       return
@@ -134,8 +143,13 @@ function initChecker() {
   }, 500)
 }
 
-function cancel() {
+function cleanup() {
   clearInterval(lassoDrawInterval)
+  savedPosition = null
+}
+
+function cancel() {
+  cleanup()
   notification?.cancel()
   figma.ui.postMessage({ action: Actions.SELECT_CANCEL })
   figma.ui.show()
@@ -145,7 +159,7 @@ function cancel() {
 }
 
 async function stop() {
-  clearInterval(lassoDrawInterval)
+  cleanup()
   prepareLasso()
   // Timeout to fire SELECT_STOP after SELECT_CHANGED
   setTimeout(() => figma.ui.postMessage({ action: Actions.SELECT_STOP }))
