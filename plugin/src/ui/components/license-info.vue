@@ -27,7 +27,8 @@
       </template>
       <div v-else-if="error" class="alert error" v-html="error" />
       <div v-else class="text">
-        Get license key to use Lasso Tool. Paid <b>once</b> - use unlimited.
+        Get license key to use Lasso Tool.<br />
+        Paid <b>once</b> - use unlimited.
       </div>
       <form class="form">
         <input
@@ -293,7 +294,7 @@ export default {
 }
 
 .text {
-  line-height: 1.4;
+  line-height: 1.5;
 }
 
 .form {
