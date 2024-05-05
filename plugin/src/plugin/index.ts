@@ -143,13 +143,9 @@ function initChecker() {
   }, 500)
 }
 
-function cleanup() {
+function cancel() {
   clearInterval(lassoDrawInterval)
   savedPosition = null
-}
-
-function cancel() {
-  cleanup()
   notification?.cancel()
   figma.ui.postMessage({ action: Actions.SELECT_CANCEL })
   figma.ui.show()
@@ -159,13 +155,14 @@ function cancel() {
 }
 
 async function stop() {
-  cleanup()
+  clearInterval(lassoDrawInterval)
   prepareLasso()
   // Timeout to fire SELECT_STOP after SELECT_CHANGED
   setTimeout(() => figma.ui.postMessage({ action: Actions.SELECT_STOP }))
   // Connect the last point with the first
   segments[vertices.length - 1].end = 0
   await redrawLasso()
+  savedPosition = null
   lasso.locked = false
   notify('Selection has been successfully completed')
   figma.ui.show()
