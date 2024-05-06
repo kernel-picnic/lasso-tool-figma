@@ -308,6 +308,23 @@ function cutNode(node: SceneNode) {
   return [copyNode(target), subtract]
 }
 
+function finishAction(nodes: SceneNode[]) {
+  // TODO: restore groups tree
+  if (nodes.length) {
+    try {
+      const group = figma.group(nodes, figma.currentPage)
+      group.name = LASSO_RESULT_GROUP_NAME
+    } catch (e) {
+      console.warn('Error creating group: ', e)
+    }
+  }
+  lasso.remove() // TODO: don't remove "Use as Lasso" selected vector
+  notify('Done!')
+  figma.ui.postMessage({
+    action: Actions.ACTION_FINISHED,
+  })
+}
+
 function applyAction(action: Actions) {
   let intersections = getIntersections(lasso)
 
@@ -322,7 +339,7 @@ function applyAction(action: Actions) {
     intersections = getIntersections(lasso)
   }
 
-  intersections.forEach((node) => {
+  const processNode = (node: SceneNode, i: number) => {
     try {
       if (node.type === 'GROUP') {
         return
@@ -354,23 +371,15 @@ function applyAction(action: Actions) {
     } catch (e) {
       // TODO: fix unhandled promise rejection: Error: in flatten: Failed to apply flatten operation
       console.warn('Error process intersection: ', node.name, e)
-    }
-  })
-
-  // TODO: restore groups tree
-  if (result.length) {
-    try {
-      const resultGroup = figma.group(result, figma.currentPage)
-      resultGroup.name = LASSO_RESULT_GROUP_NAME
-    } catch (e) {
-      console.warn('Error creating group: ', e)
+    } finally {
+      if (i === intersections.length - 1) {
+        finishAction(result)
+      }
     }
   }
 
-  lasso.remove() // TODO: don't remove "Use as Lasso" selected vector
-  notify('Done!')
-  figma.ui.postMessage({
-    action: Actions.ACTION_FINISHED,
+  intersections.forEach((node, i) => {
+    setTimeout(() => processNode(node, i), 1)
   })
 }
 
