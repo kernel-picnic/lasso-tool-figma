@@ -9,6 +9,7 @@ import { cloneLinearGradientFill } from '@plugin/utils/clone-linear-gradient-fil
 import { cloneRadialGradientFill } from '@plugin/utils/clone-radial-gradient-fill'
 import { checkSelection } from '@plugin/check-selection'
 import { deepClone } from '@plugin/utils/deep-clone'
+import { detachAllInstances } from '@plugin/utils/detach-all-instances'
 import './subscription'
 
 const LASSO_STROKE_BASE_WIDTH = 1.5
@@ -313,18 +314,7 @@ function applyAction(action: Actions) {
   // Detach components, because we can't
   // use components for 'CUT' mode
   if (action === Actions.CUT) {
-    intersections = intersections.reduce((result: SceneNode[], node) => {
-      try {
-        if (node.type === 'INSTANCE') {
-          result.push(node.detachInstance())
-        } else {
-          result.push(node)
-        }
-      } catch (e) {
-        console.info(`Node ${node.name} probable already detached`, e)
-      }
-      return result
-    }, [])
+    detachAllInstances(intersections)
     // Get new intersections, because after detaching
     // old nodes are not available
     intersections = getIntersections(lasso)
