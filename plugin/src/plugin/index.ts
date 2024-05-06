@@ -306,9 +306,29 @@ function cutNode(node: SceneNode) {
 }
 
 function applyAction(action: Actions) {
-  const intersections = getIntersections(lasso)
+  let intersections = getIntersections(lasso)
 
   const result: any = []
+
+  // Detach components, because we can't
+  // use components for 'CUT' mode
+  if (action === Actions.CUT) {
+    intersections = intersections.reduce((result: SceneNode[], node) => {
+      try {
+        if (node.type === 'INSTANCE') {
+          result.push(node.detachInstance())
+        } else {
+          result.push(node)
+        }
+      } catch (e) {
+        console.info(`Node ${node.name} probable already detached`, e)
+      }
+      return result
+    }, [])
+    // Get new intersections, because after detaching
+    // old nodes are not available
+    intersections = getIntersections(lasso)
+  }
 
   intersections.forEach((node) => {
     try {
