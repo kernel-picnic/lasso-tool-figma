@@ -192,6 +192,7 @@ function copyNodeProperties(target: SceneNode, node: SceneNode) {
       'strokes',
       'effects',
       'strokeWeight',
+      'strokeAlign',
       'fills',
       'topLeftRadius',
       'topRightRadius',
@@ -355,6 +356,7 @@ function applyAction(action: Actions) {
     }
   })
 
+  // TODO: restore groups tree
   if (result.length) {
     try {
       const resultGroup = figma.group(result, figma.currentPage)
