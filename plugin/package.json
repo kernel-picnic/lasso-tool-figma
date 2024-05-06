@@ -1,7 +1,7 @@
 {
   "name": "lasso-tool",
   "private": true,
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Your Figma Plugin",
   "main": "code.js",
   "type": "module",
