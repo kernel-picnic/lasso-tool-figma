@@ -75,6 +75,11 @@ function start(mode: Modes) {
   figma.currentPage.appendChild(lasso)
 
   lassoDrawInterval = setInterval(() => {
+    if (lasso.removed) {
+      cancel()
+      return
+    }
+
     // Assign saved position here, because if user will
     // move cursor too faster, first position will be too
     // far from the next position and lasso will be displaced
