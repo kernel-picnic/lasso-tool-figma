@@ -27,8 +27,8 @@
         <div class="icon"><img src="@ui/assets/cut.svg" alt="" /></div>
         Cut
         <common-tooltip theme="warning">
-          <b>Cut</b> mode will change origin layers. Backup important layers
-          before.
+          Cut mode will change original layers. Before doing this, back up your
+          important layers.
         </common-tooltip>
       </menu-button>
       <menu-button disabled @click="prettify">
