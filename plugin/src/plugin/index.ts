@@ -4,12 +4,11 @@ import { Mutable } from '@common/types/mutable'
 import { getMousePosition } from '@plugin/utils/get-mouse-position'
 import { getIntersections } from '@plugin/utils/traverse-and-get-intersections'
 import { getMagneticPosition } from '@plugin/utils/get-magnetic-position'
-import { cloneImageFill } from '@plugin/utils/clone-image-fill'
-import { cloneLinearGradientFill } from '@plugin/utils/clone-linear-gradient-fill'
-import { cloneRadialGradientFill } from '@plugin/utils/clone-radial-gradient-fill'
 import { checkSelection } from '@plugin/check-selection'
 import { deepClone } from '@plugin/utils/deep-clone'
 import { detachAllInstances } from '@plugin/utils/detach-all-instances'
+import { copyNode } from '@plugin/actions/copy-node'
+import { cutNode } from '@plugin/actions/cut-node'
 import './subscription'
 
 const LASSO_STROKE_BASE_WIDTH = 1.5
@@ -17,9 +16,6 @@ const LASSO_DRAW_INTERVAL = 10
 const LASSO_AUTOSTOP_MIN_VERTICES_COUNT = 50
 const LASSO_AUTOSTOP_BASE_PIXELS_THRESHOLD = 15
 const LASSO_RESULT_GROUP_NAME = 'Lasso Result'
-
-const CONTAINER_NODE_TYPES = ['GROUP', 'FRAME', 'SECTION', 'INSTANCE']
-type CONTAINER_NODE = GroupNode | FrameNode | SectionNode | InstanceNode
 
 figma.showUI(__html__, { themeColors: true, width: 250, height: 240 })
 checkSelection()
@@ -189,130 +185,6 @@ function copyLasso() {
   return lassoClone
 }
 
-function copyNodeProperties(target: SceneNode, node: SceneNode) {
-  try {
-    const properties = [
-      'name',
-      'visible',
-      'strokes',
-      'effects',
-      'strokeWeight',
-      'strokeAlign',
-      'fills',
-      'topLeftRadius',
-      'topRightRadius',
-      'bottomLeftRadius',
-      'bottomRightRadius',
-    ]
-    properties.forEach((property) => {
-      if (property in node && property in target) {
-        // TODO: add types
-        // @ts-ignore
-        target[property] = node[property]
-      }
-    })
-  } catch (e) {
-    // TODO: fix "Cannot unwrap symbol"
-    console.warn('Error copy node properties: ', node.name, e)
-  }
-}
-
-function applyParentsCornerRadius(clone: SceneNode, node: SceneNode) {
-  let traverse: any = node
-  // TODO: write general traverse function
-  while (traverse?.parent) {
-    traverse = traverse.parent
-    if (!('clipsContent' in traverse)) {
-      continue
-    }
-    if (!traverse.clipsContent) {
-      continue
-    }
-    const rect = figma.createRectangle()
-    rect.resize(traverse.width, traverse.height)
-    rect.relativeTransform = traverse.absoluteTransform
-    copyNodeProperties(rect, traverse)
-    clone = figma.flatten(
-      [figma.intersect([rect, clone], figma.currentPage)],
-      figma.currentPage,
-    )
-  }
-  copyNodeProperties(clone, node)
-  return clone
-}
-
-function copyNode(node: SceneNode) {
-  let clone: SceneNode
-  if (CONTAINER_NODE_TYPES.includes(node.type)) {
-    clone = figma.createRectangle()
-    copyNodeProperties(clone, node)
-    clone.resize(node.width, node.height)
-  } else {
-    clone = node.clone()
-  }
-
-  clone.relativeTransform = node.absoluteTransform // Copy position
-  clone = applyParentsCornerRadius(clone, node)
-  const intersection = figma.intersect([copyLasso(), clone], figma.currentPage)
-
-  if ('fills' in clone && Array.isArray(clone.fills)) {
-    clone.fills = clone.fills.map((fill) => {
-      switch (fill.type) {
-        case 'IMAGE':
-          return cloneImageFill(intersection, clone, fill)
-        case 'GRADIENT_LINEAR':
-          return cloneLinearGradientFill(intersection, clone, fill)
-        case 'GRADIENT_RADIAL':
-        case 'GRADIENT_ANGULAR':
-        case 'GRADIENT_DIAMOND':
-          return cloneRadialGradientFill(intersection, clone, fill)
-        default:
-          return fill
-      }
-    })
-  }
-
-  copyNodeProperties(intersection, clone)
-  return figma.flatten([intersection], figma.currentPage)
-}
-
-function cutNode(node: SceneNode) {
-  if (!node.parent) {
-    return []
-  }
-  // Working with auto-layout is too complex,
-  // so just disable it; anyway 'CUT' mode
-  // breaks too much to care about it
-  if ('layoutMode' in node && node.layoutMode !== 'NONE') {
-    node.layoutMode = 'NONE'
-  }
-  let target = node
-  // Because we can't cut something from
-  // frames, sections and other similar nodes
-  const isVirtualNode = CONTAINER_NODE_TYPES.includes(node.type)
-  if (isVirtualNode) {
-    node = node as CONTAINER_NODE
-    target = figma.createRectangle()
-    target.resize(node.width, node.height)
-    node.appendChild(target)
-    copyNodeProperties(target, node)
-    // Clear origin styles to prevent styles layering
-    if ('fills' in node) node.fills = []
-    if ('strokes' in node) node.strokes = []
-  }
-  const parent = node.parent || figma.currentPage
-  const index = isVirtualNode ? 0 : parent.children.indexOf(node)
-  const subtract = figma.subtract(
-    [copyLasso(), target],
-    isVirtualNode ? (node as CONTAINER_NODE) : parent,
-    index,
-  )
-  copyNodeProperties(subtract, target)
-  // TODO: add option to enable/disable flatten for 'CUT' mode
-  // const flat = figma.flatten([subtract], parent, index)
-  return [copyNode(target), subtract]
-}
-
 function finishAction(nodes: SceneNode[]) {
   // TODO: restore groups tree
   if (nodes.length) {
@@ -365,10 +237,10 @@ function applyAction(action: Actions) {
       let copy
       switch (action) {
         case Actions.COPY:
-          copy = copyNode(node)
+          copy = copyNode(node, copyLasso())
           break
         case Actions.CUT:
-          const [result] = cutNode(node)
+          const [result] = cutNode(node, copyLasso())
           copy = result
           break
       }
@@ -395,7 +267,7 @@ function useCurrentSelectionAsLasso() {
   prepareLasso()
 }
 
-function prettify() {
+function prettifyLasso() {
   const TOLERANCE = 10
 
   // Initialize simplified path with the first point
@@ -433,7 +305,7 @@ figma.ui.on('message', (message: { action: Actions; details: any }) => {
   switch (message.action) {
     case Actions.START:
       figma.ui.hide()
-      // TODO: handle notification close event
+      // TODO: handle notification 'close' event
       notify(
         'Select desired area and move cursor to the start point to end selecting',
         {
@@ -466,7 +338,7 @@ figma.ui.on('message', (message: { action: Actions; details: any }) => {
       break
 
     case Actions.PRETTIFY_LASSO:
-      prettify()
+      prettifyLasso()
       break
 
     case Actions.RESIZE_UI:
