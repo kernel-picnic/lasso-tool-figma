@@ -1,6 +1,7 @@
 <template>
   <div v-if="!isModeSelected" class="topbar">
-    <span class="badge">Beta</span>
+    <template v-if="isShowActions">Choose action</template>
+    <template v-else>Choose tool</template>
     <a href="#" @click.prevent="openHelp">Help</a>
   </div>
   <help-info v-if="showHelpPopup" @close="closeHelp" />
@@ -280,14 +281,6 @@ a {
   a {
     color: var(--figma-color-text-secondary);
   }
-}
-
-.badge {
-  border-radius: 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.6px;
-  font-size: 10px;
-  font-weight: 600;
 }
 
 .tooltip {
