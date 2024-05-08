@@ -1,8 +1,9 @@
+import { CONTAINER_NODE_TYPES } from '@common/types/container-node'
 import { cloneImageFill } from '@plugin/utils/clone-image-fill'
 import { cloneLinearGradientFill } from '@plugin/utils/clone-linear-gradient-fill'
 import { cloneRadialGradientFill } from '@plugin/utils/clone-radial-gradient-fill'
 import { copyNodeProperties } from '@plugin/utils/copy-node-properties'
-import { CONTAINER_NODE_TYPES } from '@common/types/container-node'
+import { copyLasso } from '@/plugin'
 
 function applyParentsCornerRadius(clone: SceneNode, node: SceneNode) {
   let traverse: any = node
@@ -28,7 +29,7 @@ function applyParentsCornerRadius(clone: SceneNode, node: SceneNode) {
   return clone
 }
 
-export const copyNode = (node: SceneNode, lassoCopy: VectorNode) => {
+export const copyNode = (node: SceneNode) => {
   let clone: SceneNode
   if (CONTAINER_NODE_TYPES.includes(node.type)) {
     clone = figma.createRectangle()
@@ -40,7 +41,7 @@ export const copyNode = (node: SceneNode, lassoCopy: VectorNode) => {
 
   clone.relativeTransform = node.absoluteTransform // Copy position
   clone = applyParentsCornerRadius(clone, node)
-  const intersection = figma.intersect([lassoCopy, clone], figma.currentPage)
+  const intersection = figma.intersect([copyLasso(), clone], figma.currentPage)
 
   if ('fills' in clone && Array.isArray(clone.fills)) {
     clone.fills = clone.fills.map((fill) => {

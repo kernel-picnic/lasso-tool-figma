@@ -4,8 +4,9 @@ import {
 } from '@common/types/container-node'
 import { copyNodeProperties } from '@plugin/utils/copy-node-properties'
 import { copyNode } from '@plugin/actions/copy-node'
+import { copyLasso } from '@/plugin'
 
-export const cutNode = (node: SceneNode, lassoCopy: VectorNode) => {
+export const cutNode = (node: SceneNode) => {
   if (!node.parent) {
     return []
   }
@@ -32,12 +33,12 @@ export const cutNode = (node: SceneNode, lassoCopy: VectorNode) => {
   const parent = node.parent || figma.currentPage
   const index = isVirtualNode ? 0 : parent.children.indexOf(node)
   const subtract = figma.subtract(
-    [lassoCopy, target],
+    [copyLasso(), target],
     isVirtualNode ? (node as CONTAINER_NODE) : parent,
     index,
   )
   copyNodeProperties(subtract, target)
   // TODO: add option to enable/disable flatten for 'CUT' mode
   // const flat = figma.flatten([subtract], parent, index)
-  return [copyNode(target, lassoCopy), subtract]
+  return [copyNode(target), subtract]
 }
