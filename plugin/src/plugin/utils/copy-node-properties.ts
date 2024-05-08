@@ -8,6 +8,7 @@ export const copyNodeProperties = (target: SceneNode, node: SceneNode) => {
       'strokeWeight',
       'strokeAlign',
       'fills',
+      'opacity',
       'topLeftRadius',
       'topRightRadius',
       'bottomLeftRadius',
