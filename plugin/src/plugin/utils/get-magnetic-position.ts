@@ -9,6 +9,7 @@ export const getMagneticPosition = (
 ): Vector | undefined => {
   const nodes = figma.currentPage.findAll()
   const magneticDistance = MAGNETIC_BASE_DISTANCE / figma.viewport.zoom
+  // TODO: save nearest node and first check it instead of other
   for (let node of nodes) {
     if (node.id === lassoId) {
       continue
