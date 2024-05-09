@@ -22,7 +22,7 @@
         <div class="alert success" v-html="success" />
         <p class="note">
           If you want to use current license key for another account, click
-          to&nbsp;"Detach"&nbsp;button
+          to&nbsp;"Deactivate"&nbsp;button
         </p>
       </template>
       <div v-else-if="error" class="alert error" v-html="error" />
@@ -43,16 +43,16 @@
           theme="outline"
           :disabled="!licenseKey"
           :loading="loading"
-          @click="detach"
+          @click="deactivateKey"
         >
-          Detach
+          Deactivate
         </common-button>
         <common-button
           v-else
           theme="outline"
           :disabled="!licenseKey"
           :loading="loading"
-          @click="checkLicenseKey"
+          @click="activateKey"
         >
           Submit
         </common-button>
@@ -94,8 +94,10 @@ export default {
   },
   data() {
     return {
-      licenseKey: '',
       popupShown: false,
+      licenseKey: '',
+      instanceId: '',
+      userId: null,
       success: null,
       error: null,
       loading: true,
@@ -119,7 +121,7 @@ export default {
   },
   created() {
     window.addEventListener('message', this.handleMessages)
-    postPluginMessage({ action: Actions.GET_LICENSE_KEY })
+    postPluginMessage({ action: Actions.GET_LICENSE_INFO })
     postPluginMessage({ action: Actions.GET_ACTIONS_LIMIT })
   },
   beforeUnmount() {
@@ -135,40 +137,68 @@ export default {
     openSubscriptionPage() {
       window.open(SUBSCRIPTION_URL)
     },
-    checkLicenseKey() {
-      if (!this.isFirstCheck && this.loading) {
+    sendRequest(url, payload) {
+      if (this.loading) {
         return
       }
-
-      this.success = null
-      this.error = null
       this.loading = true
-
-      fetch(`${API_URL}/verify-license-key`, {
+      this.error = null
+      this.success = null
+      return fetch(`${API_URL}/${url}`, {
         method: 'POST',
-        body: JSON.stringify({
-          licenseKey: this.licenseKey,
-          incrementUsesCount: !this.isFirstCheck,
-        }),
+        body: JSON.stringify(payload),
       })
         .then((res) => res.json())
-        .then((data) => {
-          if (!data.success) {
-            this.handleError(data.status)
-            return
-          }
-          this.success =
-            'License key is active - all features is available. Thank you! ❤️'
-          postPluginMessage({
-            action: Actions.STORE_LICENSE_KEY,
-            details: {
-              licenseKey: this.licenseKey,
-            },
-          })
-          this.$emit('set-license-state', true)
-        })
-        .catch(this.handleError)
+        .catch(
+          () => (this.error = 'Unknown error - please try again&nbsp;later'),
+        )
         .finally(() => (this.loading = false))
+    },
+    validateKey() {
+      this.sendRequest('license/validate', {
+        licenseKey: this.licenseKey,
+        instanceId: this.instanceId,
+      }).then(({ success }) => this.$emit('set-license-state', success))
+    },
+    activateKey() {
+      this.sendRequest('license/activate', {
+        licenseKey: this.licenseKey,
+        userId: this.userId,
+      }).then((data) => {
+        if (!data.success) {
+          this.handleError(data.status)
+          return
+        }
+        this.instanceId = data.instanceId
+        this.success =
+          'License key is active - all features is available. Thank you! ❤️'
+        postPluginMessage({
+          action: Actions.SET_LICENSE_INFO,
+          details: {
+            licenseKey: this.licenseKey,
+            instanceId: this.instanceId,
+          },
+        })
+        this.$emit('set-license-state', true)
+      })
+    },
+    deactivateKey() {
+      this.sendRequest('license/deactivate', {
+        licenseKey: this.licenseKey,
+        instanceId: this.instanceId,
+      }).then((data) => {
+        if (!data.success) {
+          this.handleError(data.status)
+          return
+        }
+        this.licenseKey = ''
+        this.instanceId = ''
+        postPluginMessage({
+          action: Actions.SET_LICENSE_INFO,
+          details: { licenseKey: '', instanceId: '' },
+        })
+        this.$emit('set-license-state', false)
+      })
     },
     handleError(status = '') {
       this.$emit('set-license-state', false)
@@ -176,56 +206,28 @@ export default {
         case 'invalid_key':
           this.error = 'Invalid license key'
           break
-        case 'already_in_use':
+        case 'already_active':
           this.error =
-            'License key already used in another account - detach it before'
+            'License key already used in another account - deactivate it before'
           break
         default:
           this.error = 'Unknown error - please try again&nbsp;later'
       }
     },
-    detach() {
-      if (this.loading) {
-        return
-      }
-
-      this.loading = true
-
-      fetch(`${API_URL}/detach-license-key`, {
-        method: 'POST',
-        body: JSON.stringify({ licenseKey: this.licenseKey }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          if (!data.success) {
-            this.handleError(data.status)
-            return
-          }
-          this.success = null
-          this.licenseKey = ''
-          postPluginMessage({
-            action: Actions.STORE_LICENSE_KEY,
-            details: { licenseKey: '' },
-          })
-          this.$emit('set-license-state', false)
-        })
-        .catch(() => {
-          this.error = 'Unknown error - please try again&nbsp;later'
-        })
-        .finally(() => (this.loading = false))
-    },
     handleMessages({ data }) {
       const message = data.pluginMessage
 
       switch (message.action) {
-        case Actions.PASTE_LICENSE_KEY:
-          if (!message.licenseKey) {
+        case Actions.PASTE_LICENSE_INFO:
+          if (!message.licenseInfo) {
             this.loading = false
             this.$emit('set-license-state', false)
             return
           }
-          this.licenseKey = message.licenseKey
-          this.checkLicenseKey()
+          this.userId = message.userId
+          this.licenseKey = message.info.licenseKey
+          this.instanceId = message.info.instanceId
+          this.validateKey()
           break
       }
     },

@@ -1,6 +1,6 @@
 import Fastify from 'fastify'
 
-const API_URL = 'https://api.gumroad.com/v2/'
+const API_URL = 'https://api.lemonsqueezy.com/v1'
 const PORT = process.env.PORT || 3000
 const host = 'RENDER' in process.env ? `0.0.0.0` : `localhost`
 
@@ -16,57 +16,82 @@ fastify.addHook('preHandler', (req, reply, done) => {
   done()
 })
 
-async function sendRequest(url, method = 'GET', data) {
+async function sendRequest(url, method = 'GET', data = null) {
   const response = await fetch(`${API_URL}/${url}`, {
     method,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...data, product_id: process.env.PRODUCT_ID }),
+    headers: {
+      Accept: 'application/vnd.api+json',
+      'Content-Type': 'application/vnd.api+json',
+      Authorization: `Bearer ${process.env.API_KEY}`,
+    },
+    body: data ? JSON.stringify(data) : null,
   })
   const json = await response.json()
   fastify.log.info(json)
   return json
 }
 
-fastify.get('/health', (req, res) => {
+fastify.get('/health', () => {
   return { status: 'ok' }
 })
 
-fastify.post('/verify-license-key', async function handler(request, reply) {
+fastify.post('/license/validate', async (request) => {
   const body = JSON.parse(request.body)
-  const payload = {
-    license_key: body.licenseKey,
+  if (!body.licenseKey) {
+    return { success: false, status: 'empty_license_key' }
   }
-
-  const response = await sendRequest('/licenses/verify', 'POST', {
-    ...payload,
-    increment_uses_count: false,
+  if (!body.instanceId) {
+    return { success: false, status: 'empty_instance_id' }
+  }
+  const response = await sendRequest('licenses/validate', 'POST', {
+    license_key: body.licenseKey,
+    instance_id: body.instanceId,
   })
-
-  if (!response.success) {
+  if (response.valid) {
+    return { success: true, status: 'ok' }
+  } else {
     return { success: false, status: 'invalid_key' }
   }
-
-  if (body.incrementUsesCount) {
-    if (response.uses !== 0) {
-      return { success: false, status: 'already_in_use' }
-    }
-    // Increment uses count
-    await sendRequest('/licenses/verify', 'POST', {
-      ...payload,
-      increment_uses_count: true,
-    })
-  }
-
-  return { success: true, status: 'success' }
 })
 
-fastify.post('/detach-license-key', async function handler(request, reply) {
+fastify.post('/license/activate', async (request) => {
   const body = JSON.parse(request.body)
-  const response = await sendRequest('/licenses/decrement_uses_count', 'PUT', {
-    access_token: process.env.ACCESS_TOKEN,
+  if (!body.licenseKey) {
+    return { success: false, status: 'empty_license_key' }
+  }
+  if (!body.userId) {
+    return { success: false, status: 'empty_user_id' }
+  }
+  const response = await sendRequest('licenses/activate', 'POST', {
     license_key: body.licenseKey,
+    instance_name: body.userId,
   })
-  return { success: response.success, message: response.message }
+  if (response.activated) {
+    return { success: true, status: 'ok', instanceId: response.instance.id }
+  }
+  if (response.activation_limit === response.activation_usage) {
+    return { success: false, status: 'already_active' }
+  }
+  return { success: false, status: 'invalid_key' }
+})
+
+fastify.post('/license/deactivate', async function handler(request, reply) {
+  const body = JSON.parse(request.body)
+  if (!body.licenseKey) {
+    return { success: false, status: 'empty_license_key' }
+  }
+  if (!body.userId) {
+    return { success: false, status: 'empty_user_id' }
+  }
+  const response = await sendRequest('licenses/deactivate', 'POST', {
+    license_key: body.licenseKey,
+    instance_id: body.instanceId,
+  })
+  if (!response.deactivated) {
+    // TODO: add status
+    return { success: false, status: response.error }
+  }
+  return { success: true, status: 'ok' }
 })
 
 try {

@@ -4,11 +4,16 @@ const VARIABLE_NAME = 'licenseKey'
 const ACTIONS_LIMIT_KEY = 'actionsLimit'
 const DEFAULT_ACTIONS_LIMIT = 5
 
-function setLicenseKey(licenseKey: string) {
-  return figma.clientStorage.setAsync(VARIABLE_NAME, licenseKey)
+type LicenseInfo = Partial<{
+  licenseKey: string
+  instanceId: string
+}>
+
+function setLicenseInfo(info: LicenseInfo) {
+  return figma.clientStorage.setAsync(VARIABLE_NAME, info)
 }
 
-function getLicenseKey() {
+function getLicenseInfo(): Promise<LicenseInfo> {
   return figma.clientStorage.getAsync(VARIABLE_NAME)
 }
 
@@ -27,16 +32,20 @@ function sendLimit(limit: number) {
 
 figma.ui.on('message', (message: { action: Actions; details: any }) => {
   switch (message.action) {
-    case Actions.STORE_LICENSE_KEY:
-      setLicenseKey(message.details.licenseKey)
+    case Actions.GET_LICENSE_INFO:
+      getLicenseInfo().then((info = {}) => {
+        figma.ui.postMessage({
+          action: Actions.PASTE_LICENSE_INFO,
+          userId: figma.currentUser?.id,
+          ...info,
+        })
+      })
       break
 
-    case Actions.GET_LICENSE_KEY:
-      getLicenseKey().then((licenseKey) => {
-        figma.ui.postMessage({
-          action: Actions.PASTE_LICENSE_KEY,
-          licenseKey,
-        })
+    case Actions.SET_LICENSE_INFO:
+      setLicenseInfo({
+        licenseKey: message.details.licenseKey,
+        instanceId: message.details.instanceId,
       })
       break
 
@@ -46,8 +55,8 @@ figma.ui.on('message', (message: { action: Actions; details: any }) => {
 
     case Actions.COPY:
     case Actions.CUT:
-      getLicenseKey().then((licenseKey) => {
-        if (licenseKey) {
+      getLicenseInfo().then((info) => {
+        if (!info.licenseKey) {
           return
         }
         getActionsLimit().then((limit) => {
