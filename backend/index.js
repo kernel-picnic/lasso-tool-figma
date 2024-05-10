@@ -69,7 +69,10 @@ fastify.post('/license/activate', async (request) => {
   if (response.activated) {
     return { success: true, status: 'ok', instanceId: response.instance.id }
   }
-  if (response.activation_limit === response.activation_usage) {
+  if (
+    response.activation_limit &&
+    response.activation_limit === response.activation_usage
+  ) {
     return { success: false, status: 'already_active' }
   }
   return { success: false, status: 'invalid_key' }
@@ -80,8 +83,8 @@ fastify.post('/license/deactivate', async function handler(request, reply) {
   if (!body.licenseKey) {
     return { success: false, status: 'empty_license_key' }
   }
-  if (!body.userId) {
-    return { success: false, status: 'empty_user_id' }
+  if (!body.instanceId) {
+    return { success: false, status: 'empty_instance_id' }
   }
   const response = await sendRequest('licenses/deactivate', 'POST', {
     license_key: body.licenseKey,

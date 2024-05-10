@@ -11,5 +11,5 @@
   "networkAccess": {
     "allowedDomains": ["https://api.lasso.design"]
   },
-  "permissions": ["activeusers"]
+  "permissions": ["activeusers", "currentuser"]
 }

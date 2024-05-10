@@ -18,14 +18,16 @@
         <close-button @click="hidePopup" />
       </div>
 
-      <template v-if="success">
-        <div class="alert success" v-html="success" />
+      <div v-if="errorText" class="alert error" v-html="errorText" />
+      <template v-else-if="showSuccessAlert">
+        <div class="alert success">
+          License key is active - all features is available. Thank you! ❤️
+        </div>
         <p class="note">
           If you want to use current license key for another account, click
           to&nbsp;"Deactivate"&nbsp;button
         </p>
       </template>
-      <div v-else-if="error" class="alert error" v-html="error" />
       <div v-else class="text">
         Get license key to use Lasso Tool.<br />
         Paid <b>once</b> - use unlimited.
@@ -98,8 +100,8 @@ export default {
       licenseKey: '',
       instanceId: '',
       userId: null,
-      success: null,
-      error: null,
+      showSuccessAlert: false,
+      errorText: '',
       loading: true,
     }
   },
@@ -138,19 +140,19 @@ export default {
       window.open(SUBSCRIPTION_URL)
     },
     sendRequest(url, payload) {
-      if (this.loading) {
-        return
+      if (!this.isFirstCheck && this.loading) {
+        return Promise.resolve()
       }
       this.loading = true
-      this.error = null
-      this.success = null
+      this.errorText = ''
       return fetch(`${API_URL}/${url}`, {
         method: 'POST',
         body: JSON.stringify(payload),
       })
         .then((res) => res.json())
         .catch(
-          () => (this.error = 'Unknown error - please try again&nbsp;later'),
+          () =>
+            (this.errorText = 'Unknown error - please try again&nbsp;later'),
         )
         .finally(() => (this.loading = false))
     },
@@ -158,7 +160,10 @@ export default {
       this.sendRequest('license/validate', {
         licenseKey: this.licenseKey,
         instanceId: this.instanceId,
-      }).then(({ success }) => this.$emit('set-license-state', success))
+      }).then(({ success }) => {
+        this.showSuccessAlert = true
+        this.$emit('set-license-state', success)
+      })
     },
     activateKey() {
       this.sendRequest('license/activate', {
@@ -170,8 +175,7 @@ export default {
           return
         }
         this.instanceId = data.instanceId
-        this.success =
-          'License key is active - all features is available. Thank you! ❤️'
+        this.showSuccessAlert = true
         postPluginMessage({
           action: Actions.SET_LICENSE_INFO,
           details: {
@@ -201,17 +205,16 @@ export default {
       })
     },
     handleError(status = '') {
-      this.$emit('set-license-state', false)
       switch (status) {
         case 'invalid_key':
-          this.error = 'Invalid license key'
+          this.errorText = 'Invalid license key'
           break
         case 'already_active':
-          this.error =
+          this.errorText =
             'License key already used in another account - deactivate it before'
           break
         default:
-          this.error = 'Unknown error - please try again&nbsp;later'
+          this.errorText = 'Unknown error - please try again&nbsp;later'
       }
     },
     handleMessages({ data }) {
@@ -219,14 +222,14 @@ export default {
 
       switch (message.action) {
         case Actions.PASTE_LICENSE_INFO:
-          if (!message.licenseInfo) {
+          this.userId = message.userId
+          if (!message.licenseKey) {
             this.loading = false
             this.$emit('set-license-state', false)
             return
           }
-          this.userId = message.userId
-          this.licenseKey = message.info.licenseKey
-          this.instanceId = message.info.instanceId
+          this.licenseKey = message.licenseKey
+          this.instanceId = message.instanceId
           this.validateKey()
           break
       }
