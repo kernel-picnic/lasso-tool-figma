@@ -78,7 +78,8 @@ import { Actions } from '@common/types/actions'
 import CommonButton from '@ui/components/common-button.vue'
 import CloseButton from '@ui/components/close-button.vue'
 
-const SUBSCRIPTION_URL = 'https://troynin.gumroad.com/l/lasso-tool'
+const SUBSCRIPTION_URL =
+  'https://troynin.lemonsqueezy.com/buy/5aefaf66-240a-4b46-9be6-14d7041c08cc'
 
 export default {
   name: 'PremiumInfo',
