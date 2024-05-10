@@ -197,6 +197,7 @@ export default {
         }
         this.licenseKey = ''
         this.instanceId = ''
+        this.showSuccessAlert = false
         postPluginMessage({
           action: Actions.SET_LICENSE_INFO,
           details: { licenseKey: '', instanceId: '' },
