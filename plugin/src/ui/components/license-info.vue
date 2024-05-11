@@ -63,7 +63,7 @@
         v-if="!isLicenseActive"
         class="get-button"
         theme="primary"
-        @click="openSubscriptionPage"
+        @click="getLicenseKey"
       >
         Get a license key
       </common-button>
@@ -78,8 +78,7 @@ import { Actions } from '@common/types/actions'
 import CommonButton from '@ui/components/common-button.vue'
 import CloseButton from '@ui/components/close-button.vue'
 
-const SUBSCRIPTION_URL =
-  'https://troynin.lemonsqueezy.com/buy/5aefaf66-240a-4b46-9be6-14d7041c08cc'
+const PURCHASE_URL = 'https://lasso.design/purchase'
 
 export default {
   name: 'PremiumInfo',
@@ -137,8 +136,8 @@ export default {
     hidePopup() {
       this.popupShown = false
     },
-    openSubscriptionPage() {
-      window.open(SUBSCRIPTION_URL)
+    getLicenseKey() {
+      window.open(PURCHASE_URL)
     },
     sendRequest(url, payload) {
       if (!this.isFirstCheck && this.loading) {
