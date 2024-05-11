@@ -70,8 +70,9 @@ fastify.post('/license/activate', async (request) => {
     return { success: true, status: 'ok', instanceId: response.instance.id }
   }
   if (
-    response.license_key?.activation_limit ===
-    response.license_key?.activation_usage
+    response.license_key &&
+    response.license_key.activation_limit ===
+      response.license_key.activation_usage
   ) {
     return { success: false, status: 'already_active' }
   }
