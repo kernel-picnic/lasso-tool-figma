@@ -4,6 +4,8 @@ import AppHero from '../components/app-hero.astro'
 import AppModes from '../components/app-modes.astro'
 import AppActions from '../components/app-actions.astro'
 import AppFooter from '../components/app-footer.astro'
+
+const isProd = import.meta.env.PROD
 ---
 
 <!doctype html>
@@ -13,6 +15,16 @@ import AppFooter from '../components/app-footer.astro'
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Lasso Tool - Figma Plugin</title>
+
+    {
+      isProd && (
+        <script
+          defer
+          src="https://analytics.eu.umami.is/script.js"
+          data-website-id="2315de12-78f1-46d5-a253-77b1a2775223"
+        />
+      )
+    }
   </head>
   <body>
     <div class="container">
