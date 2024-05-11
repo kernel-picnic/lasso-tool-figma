@@ -11,7 +11,6 @@
   <!-- TODO: selection preview -->
   <!-- TODO: add help -->
   <!-- TODO: write that text nodes will be flatten in 'cut' mode -->
-  <!-- TODO: optimize svgs -->
   <div v-else :class="['menu', { disabled: isMenuDisabled }]">
     <div v-if="isActionRunning" class="loader">
       <!-- TODO: fix loader freeze -->
