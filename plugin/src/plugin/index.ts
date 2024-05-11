@@ -191,6 +191,7 @@ function finishAction(nodes: SceneNode[]) {
     try {
       const group = figma.group(nodes, figma.currentPage)
       group.name = LASSO_RESULT_GROUP_NAME
+      figma.currentPage.selection = [group]
     } catch (e) {
       console.warn('Error creating group: ', e)
     }
