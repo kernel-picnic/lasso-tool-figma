@@ -29,7 +29,7 @@ function applyParentsCornerRadius(clone: SceneNode, node: SceneNode) {
   return clone
 }
 
-export const copyNode = (node: SceneNode) => {
+export const copyNode = async (node: SceneNode) => {
   let clone: SceneNode
   if (CONTAINER_NODE_TYPES.includes(node.type)) {
     clone = figma.createRectangle()
@@ -44,20 +44,22 @@ export const copyNode = (node: SceneNode) => {
   const intersection = figma.intersect([copyLasso(), clone], figma.currentPage)
 
   if ('fills' in clone && Array.isArray(clone.fills)) {
-    clone.fills = clone.fills.map((fill) => {
-      switch (fill.type) {
-        case 'IMAGE':
-          return cloneImageFill(intersection, clone, fill)
-        case 'GRADIENT_LINEAR':
-          return cloneLinearGradientFill(intersection, clone, fill)
-        case 'GRADIENT_RADIAL':
-        case 'GRADIENT_ANGULAR':
-        case 'GRADIENT_DIAMOND':
-          return cloneRadialGradientFill(intersection, clone, fill)
-        default:
-          return fill
-      }
-    })
+    clone.fills = await Promise.all(
+      clone.fills.map(async (fill) => {
+        switch (fill.type) {
+          case 'IMAGE':
+            return cloneImageFill(intersection, node, fill)
+          case 'GRADIENT_LINEAR':
+            return cloneLinearGradientFill(intersection, clone, fill)
+          case 'GRADIENT_RADIAL':
+          case 'GRADIENT_ANGULAR':
+          case 'GRADIENT_DIAMOND':
+            return cloneRadialGradientFill(intersection, clone, fill)
+          default:
+            return fill
+        }
+      }),
+    )
   }
 
   copyNodeProperties(intersection, clone)

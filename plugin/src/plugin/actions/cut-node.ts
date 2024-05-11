@@ -6,7 +6,7 @@ import { copyNodeProperties } from '@plugin/utils/copy-node-properties'
 import { copyNode } from '@plugin/actions/copy-node'
 import { copyLasso } from '@/plugin'
 
-export const cutNode = (node: SceneNode) => {
+export const cutNode = async (node: SceneNode) => {
   if (!node.parent) {
     return []
   }
@@ -40,5 +40,5 @@ export const cutNode = (node: SceneNode) => {
   copyNodeProperties(subtract, target)
   // TODO: add option to enable/disable flatten for 'CUT' mode
   // const flat = figma.flatten([subtract], parent, index)
-  return [copyNode(target), subtract]
+  return [await copyNode(target), subtract]
 }

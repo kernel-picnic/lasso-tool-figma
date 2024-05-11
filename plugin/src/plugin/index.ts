@@ -176,7 +176,7 @@ function prepareLasso() {
   figma.currentPage.selection = [lasso]
 }
 
-function copyLasso() {
+export function copyLasso() {
   const lassoClone = lasso.clone()
   // Without fill intersection will not work
   lassoClone.fills = [figma.util.solidPaint('#fff')]
@@ -203,7 +203,7 @@ function finishAction(nodes: SceneNode[]) {
   })
 }
 
-function applyAction(action: Actions) {
+async function applyAction(action: Actions) {
   let intersections = getIntersections(lasso)
 
   const result: any = []
@@ -217,31 +217,33 @@ function applyAction(action: Actions) {
     intersections = getIntersections(lasso)
   }
 
-  const processNode = (node: SceneNode, i: number) => {
+  for (let i = 0; i < intersections.length; i++) {
+    const node = intersections[i]
+
     try {
       if (node.type === 'GROUP') {
-        return
+        continue
       }
       if (!node.parent) {
-        return
+        continue
       }
       if (node.id === lasso.id) {
-        return
+        continue
       }
       // If node is visible, but parent is invisible
       if (
         'absoluteRenderBounds' in node &&
         node.absoluteRenderBounds === null
       ) {
-        return
+        continue
       }
       let copy
       switch (action) {
         case Actions.COPY:
-          copy = copyNode(node, copyLasso())
+          copy = await copyNode(node)
           break
         case Actions.CUT:
-          const [result] = cutNode(node, copyLasso())
+          const [result] = await cutNode(node)
           copy = result
           break
       }
@@ -249,16 +251,13 @@ function applyAction(action: Actions) {
     } catch (e) {
       // TODO: fix unhandled promise rejection: Error: in flatten: Failed to apply flatten operation
       console.warn('Error process intersection: ', node.name, e)
-    } finally {
-      if (i === intersections.length - 1) {
-        finishAction(result)
-      }
     }
+
+    // Performance optimization
+    await new Promise((resolve) => setTimeout(resolve))
   }
 
-  intersections.forEach((node, i) => {
-    setTimeout(() => processNode(node, i), 1)
-  })
+  finishAction(result)
 }
 
 function useCurrentSelectionAsLasso() {
