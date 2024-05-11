@@ -1,6 +1,6 @@
 <template>
   <div :class="['tooltip', theme]">
-    ?
+    <slot name="icon">?</slot>
     <div class="tooltip-content">
       <slot />
     </div>
