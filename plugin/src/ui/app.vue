@@ -271,7 +271,9 @@ a {
     text-decoration: none;
   }
 }
+</style>
 
+<style scoped>
 .topbar {
   border-bottom: 1px solid var(--figma-color-border);
   padding: 0 var(--padding);

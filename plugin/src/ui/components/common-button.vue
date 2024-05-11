@@ -4,7 +4,8 @@
     :disabled="loading"
     :class="['button', theme, { loading }]"
   >
-    <slot />
+    <img v-if="loading" src="@ui/assets/loader.svg" class="loader" alt="" />
+    <slot v-else />
   </button>
 </template>
 
@@ -64,5 +65,10 @@ export default {
     opacity: 0.6;
     cursor: not-allowed;
   }
+}
+
+.loader {
+  width: 15px;
+  height: 15px;
 }
 </style>
