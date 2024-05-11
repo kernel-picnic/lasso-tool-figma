@@ -1,9 +1,12 @@
 ---
+import { Image } from 'astro:assets'
+import logoImage from '../assets/logo.svg'
+
 const { className } = Astro.props
 ---
 
 <a href="/" title="Lasso Tool" class:list={['logo', className]}>
-  <img src="logo.svg" alt="Lasso Tool" />
+  <Image src={logoImage} alt="Lasso Tool" />
   Lasso Tool
   <slot />
 </a>
@@ -19,8 +22,9 @@ const { className } = Astro.props
     position: relative;
 
     img {
-      height: 40px;
-      margin-right: 10px;
+      width: 32px;
+      height: 32px;
+      margin-right: 12px;
     }
   }
 </style>

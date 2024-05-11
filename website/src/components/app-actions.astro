@@ -79,15 +79,18 @@ const id = Math.random()
   }
 
   .title {
-    font-size: 50px;
     margin-bottom: 30px;
   }
 
   .description {
-    font-size: 26px;
+    font-size: var(--subtitle-size);
     margin: 0 auto 60px;
     line-height: 1.5;
     color: var(--figma-color-text-secondary);
+
+    @media screen and (max-width: 768px) {
+      margin-bottom: 40px;
+    }
   }
 
   .buttons {
@@ -96,6 +99,11 @@ const id = Math.random()
     align-items: center;
     justify-content: center;
     gap: 20px;
+
+    @media screen and (max-width: 768px) {
+      gap: 8px;
+      margin-bottom: 40px;
+    }
 
     button {
       border: 2px solid transparent;
@@ -107,6 +115,10 @@ const id = Math.random()
       display: flex;
       align-items: center;
       position: relative;
+
+      @media screen and (max-width: 768px) {
+        padding: 8px 12px;
+      }
 
       &:not(:disabled):hover {
         cursor: pointer;
@@ -125,6 +137,12 @@ const id = Math.random()
         width: 30px;
         height: 30px;
         margin-right: 10px;
+
+        @media screen and (max-width: 768px) {
+          width: 20px;
+          height: 20px;
+          margin-right: 7px;
+        }
       }
 
       .badge {
@@ -167,7 +185,7 @@ const id = Math.random()
         max-width: 800px;
         flex-shrink: 0;
         object-fit: cover;
-        height: 500px;
+        max-height: 500px;
         border-radius: 30px;
         margin: 0 auto;
         box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
@@ -182,9 +200,14 @@ const id = Math.random()
     margin: 0 auto;
     padding: 50px 70px;
 
+    @media screen and (max-width: 768px) {
+      padding: 40px;
+    }
+
     .subtitle {
       margin-bottom: 40px;
-      font-size: 1.25em;
+      font-size: var(--subtitle-size);
+      line-height: 1.6;
     }
   }
 
@@ -192,6 +215,12 @@ const id = Math.random()
     display: flex;
     justify-content: space-between;
     list-style: none;
+
+    @media screen and (max-width: 768px) {
+      display: grid;
+      grid-template-columns: min-content min-content;
+      gap: 15px;
+    }
 
     li {
       display: flex;

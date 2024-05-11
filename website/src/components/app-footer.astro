@@ -7,7 +7,7 @@ import figmaLogo from '../assets/figma-logo.svg'
 
 <footer class="footer">
   <h2 class="title">Get started now</h2>
-  <div class="subtitle">Try for free or buy forever for just $5</div>
+  <div class="subtitle">Try for free or buy forever for&nbsp;just&nbsp;$5</div>
   <AppButton className="button" href="#" big>
     <Image src={figmaLogo} big class="button-image" alt="" />
     Install on Figma
@@ -19,10 +19,13 @@ import figmaLogo from '../assets/figma-logo.svg'
     </div>
     <menu class="menu">
       <a href="mailto:hi@lasso.design">Support</a>
-      <a href="#">Privacy</a>
-      <a href="#">Terms</a>
+      <!-- TODO -->
+      <!--<a href="#">Privacy</a>-->
+      <!--<a href="#">Terms</a>-->
     </menu>
-    <span class="author">Made by <a href="#">@troynin</a></span>
+    <span class="author">
+      Made by <a href="https://twitter.com/AntonTroinin">@troynin</a>
+    </span>
   </nav>
 </footer>
 
@@ -32,17 +35,18 @@ import figmaLogo from '../assets/figma-logo.svg'
     flex-direction: column;
     align-items: center;
     margin-bottom: 50px;
+    text-align: center;
   }
 
   .title {
-    font-size: 50px;
     margin-bottom: 20px;
   }
 
   .subtitle {
-    font-size: 25px;
+    font-size: var(--subtitle-size);
     color: var(--figma-color-text-secondary);
     margin-bottom: 50px;
+    line-height: 1.6;
   }
 
   .button {
@@ -61,6 +65,11 @@ import figmaLogo from '../assets/figma-logo.svg'
     display: flex;
     justify-content: space-between;
     align-items: center;
+
+    @media screen and (max-width: 768px) {
+      flex-direction: column;
+      gap: 30px;
+    }
   }
 
   .logo {

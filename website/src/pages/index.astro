@@ -30,9 +30,15 @@ import AppFooter from '../components/app-footer.astro'
 
   :root {
     --offset: 200px;
+    --heading-1-size: 80px;
+    --heading-2-size: 50px;
+    --subtitle-size: 26px;
 
     @media (max-width: 768px) {
       --offset: 80px;
+      --heading-1-size: 40px;
+      --heading-2-size: 30px;
+      --subtitle-size: 22px;
     }
 
     /* TODO: remove unused vars */
@@ -233,6 +239,14 @@ import AppFooter from '../components/app-footer.astro'
     &:hover {
       color: var(--figma-color-bg-brand-hover);
     }
+  }
+
+  h1 {
+    font-size: var(--heading-1-size);
+  }
+
+  h2 {
+    font-size: var(--heading-2-size);
   }
 
   .container {

@@ -36,12 +36,11 @@ import anyVectorExampleImage from '../assets/modes/any-vector.png'
     }
 
     .title {
-      font-size: 50px;
       margin-bottom: 30px;
     }
 
     .description {
-      font-size: 26px;
+      font-size: var(--subtitle-size);
       margin-bottom: 80px;
       line-height: 1.5;
       color: var(--figma-color-text-secondary);
@@ -53,11 +52,18 @@ import anyVectorExampleImage from '../assets/modes/any-vector.png'
       gap: 50px;
       text-align: center;
       margin-bottom: 50px;
+
+      @media screen and (max-width: 768px) {
+        flex-direction: column;
+      }
     }
 
     .item {
       width: 100%;
-      aspect-ratio: 1 / 1;
+
+      @media screen and (min-width: 767px) {
+        aspect-ratio: 1 / 1;
+      }
 
       video {
         width: 100%;
@@ -71,6 +77,11 @@ import anyVectorExampleImage from '../assets/modes/any-vector.png'
       font-size: 30px;
       letter-spacing: 0.3px;
       margin-bottom: 40px;
+
+      @media screen and (max-width: 768px) {
+        font-size: 26px;
+        margin-bottom: 30px;
+      }
     }
 
     .any-vector {
@@ -78,14 +89,28 @@ import anyVectorExampleImage from '../assets/modes/any-vector.png'
       border-radius: 30px;
       padding: 50px;
 
+      @media screen and (max-width: 768px) {
+        background: none;
+        padding: 0;
+      }
+
       .name {
         margin-bottom: 50px;
+
+        @media screen and (max-width: 768px) {
+          margin-bottom: 30px;
+        }
       }
 
       img {
         width: 100%;
         height: 100%;
         border-radius: 30px;
+
+        @media screen and (max-width: 768px) {
+          margin-bottom: 20px;
+          border: 1px solid var(--figma-color-border);
+        }
       }
     }
   </style>
