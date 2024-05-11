@@ -1,0 +1,214 @@
+---
+import { Image } from 'astro:assets'
+import iconCopy from '../assets/copy.svg'
+import iconCut from '../assets/cut.svg'
+import iconPrettify from '../assets/prettify.svg'
+import actionCopy from '../assets/actions/copy.mov'
+import actionCut from '../assets/actions/cut.mov'
+
+const id = Math.random()
+---
+
+<script>
+  const parent = document.querySelector('.actions')
+
+  function changeSlide() {
+    const activeSlide = parent.querySelector('li[data-active]')
+    delete activeSlide.dataset.active
+    activeSlide.querySelector('video').pause()
+
+    const activeButton = parent.querySelector('button[data-active]')
+    delete activeButton.dataset.active
+
+    this.dataset.active = true
+    const sectionQuery = `li:nth-child(${this.dataset.index})`
+    const nextSlide = parent.querySelector(sectionQuery)
+    nextSlide.dataset.active = true
+    nextSlide.querySelector('video').play()
+  }
+
+  parent.querySelectorAll('button').forEach((button) => {
+    button.addEventListener('click', changeSlide)
+  })
+</script>
+
+<section class="actions" data-id={id}>
+  <h2 class="title">Actions in one-click</h2>
+  <div class="description">
+    Copy or cut all layers within selection in one click.<br />
+    It doesn't matter what type or size of layer.
+  </div>
+
+  <div class="buttons">
+    <button type="button" data-index="1" data-active>
+      <Image src={iconCopy} alt="" />Copy
+    </button>
+    <button type="button" data-index="2">
+      <Image src={iconCut} alt="" />Cut
+    </button>
+    <button type="button" data-index="3" disabled>
+      <Image src={iconPrettify} alt="" />Prettify
+      <span class="badge">Soon</span>
+    </button>
+  </div>
+
+  <ul class="list">
+    <li data-active>
+      <video src={actionCopy} autoplay muted loop></video>
+    </li>
+    <li>
+      <video src={actionCut} muted loop></video>
+    </li>
+  </ul>
+
+  <div class="works-with">
+    <div class="subtitle">Works with <u>all</u> layers, including:</div>
+    <ul class="features-list">
+      <li>Photos</li>
+      <li>Texts</li>
+      <li>Gradients</li>
+      <li>Frames</li>
+    </ul>
+  </div>
+</section>
+
+<style>
+  .actions {
+    text-align: center;
+    margin-bottom: var(--offset);
+  }
+
+  .title {
+    font-size: 50px;
+    margin-bottom: 30px;
+  }
+
+  .description {
+    font-size: 26px;
+    margin: 0 auto 60px;
+    line-height: 1.5;
+    color: var(--figma-color-text-secondary);
+  }
+
+  .buttons {
+    margin-bottom: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+
+    button {
+      border: 2px solid transparent;
+      padding: 15px 30px;
+      font-size: 20px;
+      background: none;
+      border-radius: 35px;
+      letter-spacing: 0.2px;
+      display: flex;
+      align-items: center;
+      position: relative;
+
+      &:not(:disabled):hover {
+        cursor: pointer;
+        background-color: var(--figma-color-bg-hover);
+      }
+
+      &[data-active] {
+        border-color: var(--figma-color-border);
+      }
+
+      &:disabled {
+        color: var(--figma-color-text-disabled);
+      }
+
+      img {
+        width: 30px;
+        height: 30px;
+        margin-right: 10px;
+      }
+
+      .badge {
+        font-size: 12px;
+        letter-spacing: 0.2px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+        line-height: 1;
+        width: 50px;
+        border: 1px solid var(--figma-color-border-disabled);
+        color: var(--figma-color-text-disabled);
+        border-radius: 10px;
+        position: absolute;
+        inset: 100% 0 auto 0;
+      }
+    }
+  }
+
+  .list {
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 100px;
+    margin-bottom: 80px;
+
+    li {
+      display: flex;
+      gap: 50px;
+
+      &:not([data-active]) {
+        display: none;
+      }
+
+      video {
+        width: 100%;
+        max-width: 800px;
+        flex-shrink: 0;
+        object-fit: cover;
+        height: 500px;
+        border-radius: 30px;
+        margin: 0 auto;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+      }
+    }
+  }
+
+  .works-with {
+    background-color: var(--figma-color-bg-secondary);
+    border-radius: 30px;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 50px 70px;
+
+    .subtitle {
+      margin-bottom: 40px;
+      font-size: 1.25em;
+    }
+  }
+
+  .features-list {
+    display: flex;
+    justify-content: space-between;
+    list-style: none;
+
+    li {
+      display: flex;
+      align-items: center;
+      color: var(--figma-color-bg-success);
+
+      &::before {
+        width: 30px;
+        height: 30px;
+        content: '';
+        display: block;
+        background: var(--figma-color-bg-success) url('../assets/check.svg')
+          center no-repeat;
+        background-size: 65%;
+        border-radius: 50%;
+        margin-right: 15px;
+      }
+    }
+  }
+</style>

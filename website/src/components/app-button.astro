@@ -1,0 +1,54 @@
+---
+const { href, className, big = false, theme = 'default', ...rest } = Astro.props
+---
+
+<a href={href} class:list={['button', className, theme, { big }]} {...rest}>
+  <slot />
+</a>
+
+<style>
+  .button {
+    padding: 0 15px;
+    height: 35px;
+    text-decoration: none;
+    border-radius: 10px;
+    font-size: 16px;
+    display: inline-flex;
+    align-items: center;
+    letter-spacing: 0.0015em;
+    position: relative;
+    transition:
+      background-color 0.1s ease,
+      border 0.1s ease,
+      color 0.1s ease;
+    /* TODO: Squircle radius */
+
+    &.big {
+      padding: 0 30px;
+      height: 65px;
+      font-size: 20px;
+      font-weight: 600;
+      border-radius: 15px;
+    }
+
+    &.default {
+      background-color: var(--figma-color-bg-brand);
+      color: #fff;
+
+      &:hover {
+        background-color: var(--figma-color-bg-brand-hover);
+      }
+    }
+
+    &.default-outline {
+      color: var(--figma-color-bg-brand);
+      border: 2px solid var(--figma-color-bg-brand);
+      background: none;
+
+      &:hover {
+        color: var(--figma-color-bg-brand-hover);
+        border-color: var(--figma-color-bg-brand-hover);
+      }
+    }
+  }
+</style>

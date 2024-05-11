@@ -1,0 +1,93 @@
+---
+import { Image } from 'astro:assets'
+import AppButton from '../components/app-button.astro'
+import AppLogo from './app-logo.astro'
+import figmaLogo from '../assets/figma-logo.svg'
+---
+
+<footer class="footer">
+  <h2 class="title">Get started now</h2>
+  <div class="subtitle">Try for free or buy forever for just $5</div>
+  <AppButton className="button" href="#" big>
+    <Image src={figmaLogo} big class="button-image" alt="" />
+    Install on Figma
+  </AppButton>
+
+  <nav class="nav">
+    <div class="logo">
+      <AppLogo />
+    </div>
+    <menu class="menu">
+      <a href="mailto:hi@lasso.design">Support</a>
+      <a href="#">Privacy</a>
+      <a href="#">Terms</a>
+    </menu>
+    <span class="author">Made by <a href="#">@troynin</a></span>
+  </nav>
+</footer>
+
+<style>
+  .footer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 50px;
+  }
+
+  .title {
+    font-size: 50px;
+    margin-bottom: 20px;
+  }
+
+  .subtitle {
+    font-size: 25px;
+    color: var(--figma-color-text-secondary);
+    margin-bottom: 50px;
+  }
+
+  .button {
+    margin-bottom: var(--offset);
+  }
+
+  .button-image {
+    width: 20px;
+    height: 20px;
+    filter: contrast(0) grayscale(1) brightness(10);
+    margin-right: 10px;
+  }
+
+  .nav {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .logo {
+    opacity: 0.5;
+  }
+
+  .menu {
+    display: flex;
+    gap: 40px;
+
+    a {
+      color: var(--figma-color-text-secondary);
+      text-decoration: none;
+      font-size: 16px;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+
+  .author {
+    font-size: 16px;
+    color: var(--figma-color-text-secondary);
+
+    a {
+      color: var(--figma-color-text-secondary);
+    }
+  }
+</style>

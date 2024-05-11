@@ -1,46 +1,71 @@
 ---
-
+import { Image } from 'astro:assets'
+import AppLogo from '../components/app-logo.astro'
+import AppButton from '../components/app-button.astro'
+import photoshopLogo from '../assets/photoshop-logo.svg'
 ---
 
 <header class="header">
-  <a href="/" title="Lasso Tool" class="logo">
-    <img src="logo.svg" alt="Lasso Tool" />
-    Lasso Tool
-  </a>
-  <a href="#" class="btn-download">Try Now</a>
+  <AppLogo>
+    <div class="badge">
+      <Image src={photoshopLogo} alt="" />
+      Like in Photoshop!
+    </div>
+  </AppLogo>
+  <menu class="menu">
+    <a href="#features">Features</a>
+  </menu>
+  <AppButton href="#" theme="default-outline">Install</AppButton>
 </header>
 
 <style>
   .header {
     color: #fff;
-    padding: 20px 0;
-    margin-bottom: 100px;
+    padding-top: 40px;
+    margin-bottom: 150px;
     display: flex;
     align-items: center;
     justify-content: space-between;
+    letter-spacing: -0.3px;
 
     @media (max-width: 768px) {
       margin-bottom: 50px;
     }
+  }
+
+  .badge {
+    display: flex;
+    align-items: center;
+    font-weight: 400;
+    background-color: var(--figma-color-bg-hover);
+    padding: 7px 12px;
+    white-space: nowrap;
+    border-radius: 15px;
+    font-size: 12px;
+    margin-left: 25px;
+    letter-spacing: 0.1px;
 
     img {
-      height: 40px;
-      margin-right: 20px;
-      box-shadow: 0 3px 20px rgba(0, 0, 0, 0.1);
-      border-radius: 10px;
-
-      @media (max-width: 768px) {
-        height: 30px;
-      }
+      width: 15px;
+      height: 15px;
+      margin-right: 7px;
     }
   }
 
-  .logo {
+  .menu {
+    margin: 0 30px 0 auto;
     display: flex;
     align-items: center;
-    font-weight: 600;
-    font-size: 20px;
-    text-decoration: none;
-    color: #000;
+    gap: 30px;
+
+    & > a {
+      font-size: 16px;
+      text-decoration: none;
+      color: var(--figma-color-text-secondary);
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
   }
 </style>

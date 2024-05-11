@@ -1,48 +1,68 @@
 ---
-
+import { Image } from 'astro:assets'
+import AppButton from '../components/app-button.astro'
+import demoVideo from '../assets/demo.mov'
+import figmaLogo from '../assets/figma-logo.svg'
 ---
 
 <section class="hero">
-  <h1 class="title">Legendary Lasso Tool</h1>
-  <div class="subtitle">Copy and cut with freeform selection</div>
-  <a href="#" class="btn-download">Try Now</a>
-
-  <video src="demo.mov" class="video" autoplay muted loop></video>
-
-  <div class="description">
-    Move your mouse and this plugin will create a selection along your
-    cursor's&nbsp;path. You can easily copy or cut all elements within selection
-    in one click, regardless of size or type. Whether it's a vector, text,
-    frame, group, section, or any other object, this plugin handles it all
-    seamlessly.
+  <h1 class="title">
+    Lasso Tool for
+    <span><Image src={figmaLogo} alt="" class="figma-logo" /> Figma</span>
+  </h1>
+  <div class="subtitle">
+    Legendary tool from Photoshop in your favourite design app<br />
+    Copy and cut with freeform selection in one click
   </div>
+  <div class="buttons">
+    <AppButton href="#" big>
+      <Image src={figmaLogo} big class="button-image" alt="" />
+      Try for Free
+    </AppButton>
+    <AppButton href="#" big theme="default-outline">
+      Buy for $5
+      <span class="btn-note">Pay <u>once</u>, use unlimited</span>
+    </AppButton>
+  </div>
+  <!-- TODO: add fallback image while video loading -->
+  <video src={demoVideo} class="demo" autoplay muted loop></video>
 </section>
 
 <style>
   .hero {
     text-align: center;
-    margin-bottom: 100px;
-
-    @media (max-width: 768px) {
-      margin-bottom: 40px;
-    }
+    margin-bottom: var(--offset);
   }
 
   .title {
     font-size: 80px;
-    margin-bottom: 30px;
+    margin-bottom: 25px;
     letter-spacing: -0.4px;
 
     @media (max-width: 768px) {
       font-size: 30px;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
     }
+
+    span {
+      color: #333333;
+    }
+  }
+
+  .figma-logo {
+    width: 65px;
+    height: 65px;
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: -2px;
+    background-color: #333333;
   }
 
   .subtitle {
     font-size: 30px;
     margin-bottom: 50px;
-    opacity: 0.8;
+    color: var(--figma-color-text-secondary);
+    line-height: 1.65;
 
     @media (max-width: 768px) {
       font-size: 20px;
@@ -50,30 +70,42 @@
     }
   }
 
-  .video {
+  .buttons {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+  }
+
+  .button-image {
+    width: 20px;
+    height: 20px;
+    filter: contrast(0) grayscale(1) brightness(10);
+    margin-right: 10px;
+  }
+
+  .btn-note {
+    position: absolute;
+    inset: calc(100% + 12px) 0 auto 0;
+    font-size: 12px;
+    color: var(--figma-color-text-secondary);
+    font-weight: 400;
+  }
+
+  .demo {
     width: 100%;
     max-width: 800px;
     border-radius: 30px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
     margin: 100px auto 50px;
     display: block;
+    box-shadow:
+      0px 1px 2px rgba(3, 7, 18, 0.02),
+      0px 2px 6px rgba(3, 7, 18, 0.04),
+      0px 5px 14px rgba(3, 7, 18, 0.06),
+      0px 10px 26px rgba(3, 7, 18, 0.08),
+      0px 15px 40px rgba(3, 7, 18, 0.1);
 
     @media (max-width: 768px) {
       margin: 60px auto 20px;
     }
-  }
-
-  .btn-download {
-    transform: scale(1.35);
-    font-weight: 600;
-  }
-
-  .description {
-    background-color: #bde3ff;
-    padding: 30px;
-    border-radius: 20px;
-    max-width: 800px;
-    margin: 0 auto;
-    line-height: 1.6;
   }
 </style>

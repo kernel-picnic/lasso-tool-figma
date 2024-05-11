@@ -1,0 +1,26 @@
+---
+const { className } = Astro.props
+---
+
+<a href="/" title="Lasso Tool" class:list={['logo', className]}>
+  <img src="logo.svg" alt="Lasso Tool" />
+  Lasso Tool
+  <slot />
+</a>
+
+<style>
+  .logo {
+    display: flex;
+    align-items: center;
+    font-weight: 600;
+    font-size: 20px;
+    text-decoration: none;
+    color: #000;
+    position: relative;
+
+    img {
+      height: 40px;
+      margin-right: 10px;
+    }
+  }
+</style>
