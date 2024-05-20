@@ -1,6 +1,6 @@
 import { Actions } from '@common/types/actions'
 
-const VARIABLE_NAME = 'licenseKey'
+const LICENSE_INFO_VARIABLE_NAME = 'licenseInfo'
 const ACTIONS_LIMIT_KEY = 'actionsLimit'
 const DEFAULT_ACTIONS_LIMIT = 5
 
@@ -10,11 +10,11 @@ type LicenseInfo = Partial<{
 }>
 
 function setLicenseInfo(info: LicenseInfo) {
-  return figma.clientStorage.setAsync(VARIABLE_NAME, info)
+  return figma.clientStorage.setAsync(LICENSE_INFO_VARIABLE_NAME, info)
 }
 
 function getLicenseInfo(): Promise<LicenseInfo> {
-  return figma.clientStorage.getAsync(VARIABLE_NAME)
+  return figma.clientStorage.getAsync(LICENSE_INFO_VARIABLE_NAME)
 }
 
 function getActionsLimit() {
@@ -56,7 +56,7 @@ figma.ui.on('message', (message: { action: Actions; details: any }) => {
     case Actions.COPY:
     case Actions.CUT:
       getLicenseInfo().then((info) => {
-        if (!info.licenseKey) {
+        if (info?.licenseKey) {
           return
         }
         getActionsLimit().then((limit) => {
