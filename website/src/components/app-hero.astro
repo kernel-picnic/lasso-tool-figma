@@ -29,7 +29,7 @@ import figmaLogo from '../assets/figma-logo.svg'
     </AppButton>
   </div>
   <!-- TODO: add fallback image while video loading -->
-  <video src={demoVideo} class="demo" autoplay muted loop></video>
+  <video src={demoVideo} class="demo" autoplay muted loop playsinline></video>
 </section>
 
 <style>
@@ -69,6 +69,7 @@ import figmaLogo from '../assets/figma-logo.svg'
       width: 30px;
       height: 30px;
       padding: 6px;
+      border-radius: 7px;
     }
   }
 
@@ -113,7 +114,7 @@ import figmaLogo from '../assets/figma-logo.svg'
   .demo {
     width: 100%;
     max-width: 800px;
-    border-radius: 30px;
+    border-radius: var(--border-radius);
     margin: 100px auto 50px;
     display: block;
     box-shadow:

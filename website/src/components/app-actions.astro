@@ -54,10 +54,10 @@ const id = Math.random()
 
   <ul class="list">
     <li data-active>
-      <video src={actionCopy} autoplay muted loop></video>
+      <video src={actionCopy} autoplay muted loop playsinline></video>
     </li>
     <li>
-      <video src={actionCut} muted loop></video>
+      <video src={actionCut} muted loop playsinline></video>
     </li>
   </ul>
 
@@ -188,7 +188,7 @@ const id = Math.random()
         flex-shrink: 0;
         object-fit: cover;
         max-height: 500px;
-        border-radius: 30px;
+        border-radius: var(--border-radius);
         margin: 0 auto;
         box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
       }
@@ -197,7 +197,7 @@ const id = Math.random()
 
   .works-with {
     background-color: var(--figma-color-bg-secondary);
-    border-radius: 30px;
+    border-radius: var(--border-radius);
     max-width: 800px;
     margin: 0 auto;
     padding: 50px 70px;
