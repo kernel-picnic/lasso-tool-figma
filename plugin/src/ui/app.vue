@@ -12,6 +12,11 @@
   <!-- TODO: add help -->
   <!-- TODO: write that text nodes will be flatten in 'cut' mode -->
   <div v-else :class="['menu', { disabled: isMenuDisabled }]">
+    <div v-if="isOffline" class="no-internet">
+      No internet connection
+      <img src="@ui/assets/no-internet.svg" alt="" />
+    </div>
+
     <div v-if="isActionRunning" class="loader">
       <!-- TODO: fix loader freeze -->
       <img src="@ui/assets/loader.svg" alt="" />
@@ -110,9 +115,10 @@ export default {
       isActiveSelection: false,
       showHelpPopup: false,
       showLicensePopup: false,
-      isLicenseActive: undefined,
+      isLicenseActive: true,
       isActionRunning: false,
       availableActionsCount: '-',
+      isOffline: false,
     }
   },
   computed: {
@@ -122,18 +128,25 @@ export default {
       return this.mode !== null
     },
     isMenuDisabled() {
-      return this.isShowActions && typeof this.isLicenseActive === 'undefined'
+      return (
+        (this.isShowActions && typeof this.isLicenseActive === 'undefined') ||
+        this.isOffline
+      )
     },
   },
   mounted() {
     window.addEventListener('blur', this.start)
     window.addEventListener('message', this.handleMessages)
     window.addEventListener('keydown', this.handleKeyDown)
+    window.addEventListener('online', this.checkInternet)
+    window.addEventListener('offline', this.checkInternet)
   },
   beforeUnmount() {
     window.removeEventListener('blur', this.start)
     window.removeEventListener('message', this.handleMessages)
     window.removeEventListener('keydown', this.handleKeyDown)
+    window.removeEventListener('online', this.checkInternet)
+    window.removeEventListener('offline', this.checkInternet)
   },
   methods: {
     handleKeyDown(e) {
@@ -189,6 +202,9 @@ export default {
     },
     closeHelp() {
       this.showHelpPopup = false
+    },
+    checkInternet() {
+      this.isOffline = !window.navigator.onLine
     },
     // TODO: move to common service
     handleMessages({ data }) {
