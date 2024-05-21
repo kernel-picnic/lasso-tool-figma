@@ -203,6 +203,11 @@ function finishAction(nodes: SceneNode[]) {
   })
 }
 
+let isMustCancelAction = false
+function cancelAction() {
+  isMustCancelAction = true
+}
+
 async function applyAction(action: Actions) {
   let intersections = getIntersections(lasso)
 
@@ -218,6 +223,11 @@ async function applyAction(action: Actions) {
   }
 
   for (let i = 0; i < intersections.length; i++) {
+    if (isMustCancelAction) {
+      isMustCancelAction = false
+      break
+    }
+
     const node = intersections[i]
 
     try {
@@ -335,6 +345,10 @@ figma.ui.on('message', (message: { action: Actions; details: any }) => {
 
     case Actions.USE_AS_LASSO:
       useCurrentSelectionAsLasso()
+      break
+
+    case Actions.ACTION_CANCEL:
+      cancelAction()
       break
 
     case Actions.PRETTIFY_LASSO:

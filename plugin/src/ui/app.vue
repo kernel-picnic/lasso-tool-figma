@@ -4,17 +4,16 @@
     <template v-else>Choose tool</template>
     <a href="#" @click.prevent="openHelp">Help</a>
   </div>
+
   <help-info v-if="showHelpPopup" @close="closeHelp" />
 
   <lasso-instruction v-if="isModeSelected" @cancel="cancel" />
 
-  <!-- TODO: selection preview -->
-  <!-- TODO: add help -->
-  <!-- TODO: write that text nodes will be flatten in 'cut' mode -->
   <div v-else :class="['menu', { disabled: isMenuDisabled }]">
     <div v-if="isActionRunning" class="loader">
       <!-- TODO: fix loader freeze -->
       <img src="@ui/assets/loader.svg" alt="" />
+      <common-button @click="cancelAction">Cancel</common-button>
     </div>
 
     <template v-if="isShowActions">
@@ -93,6 +92,7 @@ import LicenseInfo from '@ui/components/license-info.vue'
 import LassoInstruction from '@ui/components/lasso-instruction.vue'
 import HelpInfo from '@ui/components/help-info.vue'
 import CommonTooltip from '@ui/components/common-tooltip.vue'
+import CommonButton from '@ui/components/common-button.vue'
 
 export default {
   name: 'App',
@@ -102,6 +102,7 @@ export default {
     LassoInstruction,
     LicenseInfo,
     CommonTooltip,
+    CommonButton,
   },
   data() {
     return {
@@ -169,6 +170,11 @@ export default {
       }
       this.isActionRunning = true
       postPluginMessage({ action })
+    },
+    cancelAction() {
+      postPluginMessage({
+        action: Actions.ACTION_CANCEL,
+      })
     },
     applyLasso() {
       postPluginMessage({ action: Actions.USE_AS_LASSO })
@@ -319,6 +325,7 @@ a {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-direction: column;
 
   &::before {
     content: '';
@@ -332,6 +339,11 @@ a {
   img {
     width: 30px;
     height: 30px;
+    z-index: 1;
+    margin-bottom: 30px;
+  }
+
+  button {
     z-index: 1;
   }
 }

@@ -26,7 +26,6 @@ export default {
 
 <style scoped>
 .button {
-  align-self: flex-end;
   font-family: var(--font-family), sans-serif;
   display: flex;
   align-items: center;

@@ -10,6 +10,7 @@ export enum Actions {
   CUT,
   USE_AS_LASSO,
   PRETTIFY_LASSO,
+  ACTION_CANCEL,
   ACTION_FINISHED,
   RESIZE_UI,
   NOTIFY,
