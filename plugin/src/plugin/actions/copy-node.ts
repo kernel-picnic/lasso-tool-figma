@@ -3,6 +3,7 @@ import { cloneImageFill } from '@plugin/utils/clone-image-fill'
 import { cloneLinearGradientFill } from '@plugin/utils/clone-linear-gradient-fill'
 import { cloneRadialGradientFill } from '@plugin/utils/clone-radial-gradient-fill'
 import { copyNodeProperties } from '@plugin/utils/copy-node-properties'
+import { deepClone } from '@plugin/utils/deep-clone'
 import { copyLasso } from '@/plugin'
 
 function applyParentsCornerRadius(clone: SceneNode, node: SceneNode) {
@@ -45,7 +46,7 @@ export const copyNode = async (node: SceneNode) => {
 
   if ('fills' in clone && Array.isArray(clone.fills)) {
     clone.fills = await Promise.all(
-      clone.fills.map(async (fill) => {
+      clone.fills.map(async (fill: Paint) => {
         switch (fill.type) {
           case 'IMAGE':
             return cloneImageFill(intersection, node, fill)
@@ -60,6 +61,18 @@ export const copyNode = async (node: SceneNode) => {
         }
       }),
     )
+
+    if (
+      node.type === 'VECTOR' &&
+      node.vectorNetwork.segments[node.vectorNetwork.segments.length - 1].end !=
+        0 &&
+      'strokes' in clone &&
+      clone.strokes.length
+    ) {
+      const fills = deepClone<Paint[]>(clone.strokes)
+      clone.strokes = []
+      clone.fills = fills
+    }
   }
 
   copyNodeProperties(intersection, clone)

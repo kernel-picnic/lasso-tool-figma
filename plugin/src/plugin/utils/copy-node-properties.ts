@@ -1,9 +1,12 @@
-export const copyNodeProperties = (target: SceneNode, node: SceneNode) => {
+export const copyNodeProperties = (
+  target: SceneNode,
+  node: SceneNode,
+  copyStrokes = true,
+) => {
   try {
     const properties = [
       'name',
       'visible',
-      'strokes',
       'effects',
       'strokeWeight',
       'strokeAlign',
@@ -14,6 +17,9 @@ export const copyNodeProperties = (target: SceneNode, node: SceneNode) => {
       'bottomLeftRadius',
       'bottomRightRadius',
     ]
+    if (copyStrokes) {
+      properties.unshift('strokes')
+    }
     properties.forEach((property) => {
       if (property in node && property in target) {
         // TODO: add types
