@@ -1,0 +1,103 @@
+---
+import avatar1 from '../assets/reviews/avatar-andreslav.png'
+import avatar2 from '../assets/reviews/avatar-yagudaev.png'
+import avatar3 from '../assets/reviews/avatar-ledeneva.png'
+import ReviewItem from '../components/review-item.astro'
+import AppButton from '../components/app-button.astro'
+---
+
+<script>
+  const list = document.querySelector('.reviews .list')
+  const button = document.querySelector('.show-all-button')
+  button.addEventListener(
+    'click',
+    () => {
+      list.classList.add('full')
+      button.remove()
+    },
+    { once: true },
+  )
+</script>
+
+<section class="reviews">
+  <h2 class="title">Reviews</h2>
+  <div class="list">
+    <ReviewItem
+      avatar={avatar1}
+      name="Andreslav Kozlov"
+      username="@Andreslav"
+      link="https://www.figma.com/@Andreslav"
+    >
+      Quite an <span class="highlight">interesting tool</span>!
+    </ReviewItem>
+    <ReviewItem
+      avatar={avatar2}
+      name="Michael Yagudaev"
+      username="@yagudaev"
+      link="https://www.reddit.com/r/FigmaAddOns/comments/1cxv3fg/comment/l57q2l7/"
+    >
+      This is <span class="highlight">super cool</span>! 😎 Very creative and
+      can lead to some interesting designs. Reminds me of destruction
+      simulations in 2D video games. It would be cool to animate a building
+      falling apart with this 😂
+    </ReviewItem>
+    <ReviewItem
+      avatar={avatar3}
+      name="Andreslav Kozlov"
+      username="@Andreslav"
+      link="https://www.figma.com/@Andreslav"
+    >
+      Quite an <span class="highlight">interesting tool</span>!
+    </ReviewItem>
+    <ReviewItem
+      avatar={avatar3}
+      name="Andreslav Kozlov"
+      username="@Andreslav"
+      link="https://www.figma.com/@Andreslav"
+    >
+      Quite an <span class="highlight">interesting tool</span>!
+    </ReviewItem>
+  </div>
+  <AppButton className="show-all-button">Show all reviews</AppButton>
+</section>
+
+<style>
+  .reviews {
+    margin-bottom: var(--offset);
+    text-align: center;
+  }
+
+  .title {
+    margin-bottom: 50px;
+  }
+
+  .list {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+
+    @media screen and (max-width: 991px) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    @media screen and (max-width: 768px) {
+      &:global(&:not(.full) > *:nth-child(n + 4)) {
+        display: none;
+      }
+    }
+
+    @media screen and (max-width: 600px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .show-all-button {
+    width: 160px;
+    margin-top: 2rem;
+    justify-content: center;
+
+    @media screen and (min-width: 769px) {
+      display: none;
+    }
+  }
+</style>
