@@ -30,11 +30,9 @@
           important layers.
         </common-tooltip>
       </menu-button>
-      <menu-button disabled @click="prettify">
+      <menu-button @click="prettify">
         <div class="icon"><img src="@ui/assets/prettify.svg" alt="" /></div>
         Prettify selection
-        <!-- TODO -->
-        <span class="available-soon">Soon</span>
       </menu-button>
       <!-- TODO -->
       <!--      <app-button @click="cancel">-->
@@ -292,18 +290,6 @@ a {
   a {
     color: var(--figma-color-text-secondary);
   }
-}
-
-.available-soon {
-  background-color: var(--figma-color-bg-tertiary);
-  padding: 3px 5px;
-  text-transform: uppercase;
-  letter-spacing: 0.2px;
-  border-radius: 4px;
-  color: var(--figma-color-text);
-  margin-left: auto;
-  font-size: 10px;
-  font-weight: 500;
 }
 
 .menu {
