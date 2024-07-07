@@ -7,7 +7,6 @@ import { getMagneticPosition } from '@plugin/utils/get-magnetic-position'
 import { checkSelection } from '@plugin/check-selection'
 import { deepClone } from '@plugin/utils/deep-clone'
 import { detachAllInstances } from '@plugin/utils/detach-all-instances'
-import { simplifyVector } from '@plugin/utils/simplify-vector.ts'
 import { copyNode } from '@plugin/actions/copy-node'
 import { cutNode } from '@plugin/actions/cut-node'
 import { prettifyLasso } from '@plugin/actions/prettify-lasso'
@@ -320,12 +319,9 @@ figma.ui.on('message', (message: { action: Actions; details: any }) => {
       break
 
     case Actions.PRETTIFY_LASSO:
-      vertices = simplifyVector(vertices)
-      segments = vertices.map((_, index) => {
-        return { start: index, end: index + 1 }
-      })
-      segments[segments.length - 1].end = 0
-      segments = prettifyLasso(vertices, segments)
+      lasso = prettifyLasso(lasso)
+      segments = deepClone(lasso.vectorNetwork.segments)
+      vertices = deepClone(lasso.vectorNetwork.vertices)
       redrawLasso()
       break
 
