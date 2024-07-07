@@ -3,8 +3,9 @@ import { Image } from 'astro:assets'
 import iconCopy from '../assets/copy.svg'
 import iconCut from '../assets/cut.svg'
 import iconPrettify from '../assets/prettify.svg'
-import actionCopy from '../assets/actions/copy.mov'
-import actionCut from '../assets/actions/cut.mov'
+import actionCopy from '../assets/actions/copy.webm'
+import actionCut from '../assets/actions/cut.webm'
+import actionPrettify from '../assets/actions/prettify.webm'
 
 const id = Math.random()
 ---
@@ -46,9 +47,8 @@ const id = Math.random()
     <button type="button" data-index="2">
       <Image src={iconCut} alt="" />Cut
     </button>
-    <button type="button" data-index="3" disabled>
+    <button type="button" data-index="3">
       <Image src={iconPrettify} alt="" />Prettify
-      <span class="badge">Soon</span>
     </button>
   </div>
 
@@ -58,6 +58,9 @@ const id = Math.random()
     </li>
     <li>
       <video src={actionCut} muted loop playsinline></video>
+    </li>
+    <li>
+      <video src={actionPrettify} muted loop playsinline></video>
     </li>
   </ul>
 
@@ -145,23 +148,6 @@ const id = Math.random()
           height: 20px;
           margin-right: 7px;
         }
-      }
-
-      .badge {
-        font-size: 12px;
-        letter-spacing: 0.2px;
-        height: 20px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto;
-        line-height: 1;
-        width: 50px;
-        border: 1px solid var(--figma-color-border-disabled);
-        color: var(--figma-color-text-disabled);
-        border-radius: 10px;
-        position: absolute;
-        inset: 100% 0 auto 0;
       }
     }
   }
