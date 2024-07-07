@@ -23,8 +23,8 @@ checkSelection()
 
 let lassoDrawInterval: any // TODO: add type
 let lasso: VectorNode
-let vertices: VectorVertex[] = []
-let segments: any[] = [] // TODO: add type
+let vertices: Mutable<VectorVertex>[] = []
+let segments: Mutable<VectorSegment>[] = []
 let savedPosition: Mutable<Vector> | null = null
 
 // TODO: move to service
@@ -269,10 +269,21 @@ async function applyAction(action: Actions) {
   finishAction(result)
 }
 
+function cloneLassoProperties() {
+  segments = deepClone(lasso.vectorNetwork.segments)
+  vertices = deepClone(lasso.vectorNetwork.vertices)
+}
+
+function applyPrettify() {
+  lasso = prettifyLasso(lasso)
+  cloneLassoProperties()
+  redrawLasso()
+}
+
 function useCurrentSelectionAsLasso() {
   lasso = figma.currentPage.selection[0] as VectorNode
-  vertices = deepClone(lasso.vectorNetwork.vertices) as VectorVertex[]
-  segments = deepClone(lasso.vectorNetwork.segments) as VectorSegment[]
+  cloneLassoProperties()
+  savedPosition = { x: lasso.x, y: lasso.y }
   prepareLasso()
 }
 
@@ -319,10 +330,7 @@ figma.ui.on('message', (message: { action: Actions; details: any }) => {
       break
 
     case Actions.PRETTIFY_LASSO:
-      lasso = prettifyLasso(lasso)
-      segments = deepClone(lasso.vectorNetwork.segments)
-      vertices = deepClone(lasso.vectorNetwork.vertices)
-      redrawLasso()
+      applyPrettify()
       break
 
     case Actions.RESIZE_UI:
