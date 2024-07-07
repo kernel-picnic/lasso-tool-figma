@@ -9,6 +9,7 @@ import { deepClone } from '@plugin/utils/deep-clone'
 import { detachAllInstances } from '@plugin/utils/detach-all-instances'
 import { copyNode } from '@plugin/actions/copy-node'
 import { cutNode } from '@plugin/actions/cut-node'
+import { prettifyLasso } from '@plugin/actions/prettify-lasso'
 import './subscription'
 
 const LASSO_STROKE_BASE_WIDTH = 1.5
@@ -22,8 +23,8 @@ checkSelection()
 
 let lassoDrawInterval: any // TODO: add type
 let lasso: VectorNode
-let vertices: VectorVertex[] = []
-let segments: any[] = [] // TODO: add type
+let vertices: Mutable<VectorVertex>[] = []
+let segments: Mutable<VectorSegment>[] = []
 let savedPosition: Mutable<Vector> | null = null
 
 // TODO: move to service
@@ -62,6 +63,7 @@ function start(mode: Modes) {
   // Reset previous selection
   vertices.length = 0
   segments.length = 0
+  savedPosition = null
 
   lasso = figma.createVector()
   lasso.blendMode = 'EXCLUSION'
@@ -121,7 +123,6 @@ function start(mode: Modes) {
     const count = vertices.push({
       ...position,
       // cornerRadius: 5, // Breaks copy and cut
-      strokeJoin: 'ROUND',
     })
     segments.push({ start: count - 1, end: count })
     if (segments[count - 2]) {
@@ -147,7 +148,6 @@ function initChecker() {
 
 function cancel() {
   clearInterval(lassoDrawInterval)
-  savedPosition = null
   notification?.cancel()
   figma.ui.postMessage({ action: Actions.SELECT_CANCEL })
   figma.ui.show()
@@ -164,7 +164,6 @@ async function stop() {
   // Connect the last point with the first
   segments[vertices.length - 1].end = 0
   await redrawLasso()
-  savedPosition = null
   lasso.locked = false
   notify('Selection has been successfully completed')
   figma.ui.show()
@@ -270,43 +269,22 @@ async function applyAction(action: Actions) {
   finishAction(result)
 }
 
-function useCurrentSelectionAsLasso() {
-  lasso = figma.currentPage.selection[0] as VectorNode
-  vertices = deepClone(lasso.vectorNetwork.vertices) as VectorVertex[]
-  segments = deepClone(lasso.vectorNetwork.segments) as VectorSegment[]
-  prepareLasso()
+function cloneLassoProperties() {
+  segments = deepClone(lasso.vectorNetwork.segments)
+  vertices = deepClone(lasso.vectorNetwork.vertices)
 }
 
-function prettifyLasso() {
-  const TOLERANCE = 10
-
-  // Initialize simplified path with the first point
-  const simplifiedVertices = [vertices[0]]
-
-  let currentPoint = null
-  let lastPoint = vertices[0]
-  for (let i = 1; i < vertices.length; i++) {
-    currentPoint = vertices[i]
-
-    // Calculate the distance between the last point and the current point
-    const distance = Math.sqrt(
-      Math.pow(currentPoint.x - lastPoint.x, 2) +
-        Math.pow(currentPoint.y - lastPoint.y, 2),
-    )
-
-    if (distance > TOLERANCE) {
-      simplifiedVertices.push(currentPoint)
-      lastPoint = currentPoint
-    }
-  }
-
-  vertices = simplifiedVertices
-  segments = simplifiedVertices.map((_, index) => {
-    return { start: index, end: index + 1 }
-  })
-  segments[segments.length - 1].end = 0
-
+function applyPrettify() {
+  lasso = prettifyLasso(lasso)
+  cloneLassoProperties()
   redrawLasso()
+}
+
+function useCurrentSelectionAsLasso() {
+  lasso = figma.currentPage.selection[0] as VectorNode
+  cloneLassoProperties()
+  savedPosition = { x: lasso.x, y: lasso.y }
+  prepareLasso()
 }
 
 figma.on('close', cancel)
@@ -352,7 +330,7 @@ figma.ui.on('message', (message: { action: Actions; details: any }) => {
       break
 
     case Actions.PRETTIFY_LASSO:
-      prettifyLasso()
+      applyPrettify()
       break
 
     case Actions.RESIZE_UI:
