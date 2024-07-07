@@ -278,6 +278,7 @@ function applyPrettify() {
   lasso = prettifyLasso(lasso)
   cloneLassoProperties()
   redrawLasso()
+  notify('Prettify successfully applied')
 }
 
 function useCurrentSelectionAsLasso() {

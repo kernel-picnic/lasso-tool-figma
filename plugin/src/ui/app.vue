@@ -32,7 +32,7 @@
       </menu-button>
       <menu-button @click="prettify">
         <div class="icon"><img src="@ui/assets/prettify.svg" alt="" /></div>
-        Prettify selection
+        Prettify Path
       </menu-button>
       <!-- TODO -->
       <!--      <app-button @click="cancel">-->
