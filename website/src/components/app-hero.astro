@@ -1,8 +1,27 @@
 ---
-import { Image } from 'astro:assets'
+import { Image, Picture } from 'astro:assets'
 import AppButton from '../components/app-button.astro'
 import figmaLogo from '../assets/figma-logo.svg'
+import thumbnailPng from '../assets/thumbnail@2x.png'
 ---
+
+<script>
+  const thumbnail = document.querySelector('.video-thumbnail')
+  const playButton = document.querySelector('.play-button')
+  const showDemo = () => {
+    const iframe = document.createElement('iframe')
+    iframe.src = 'https://www.youtube.com/embed/mnDFb9_E8Oo?autoplay=1'
+    iframe.title = 'Demo'
+    iframe.allow =
+      'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share'
+    iframe.referrerPolicy = 'strict-origin-when-cross-origin'
+    iframe.allowFullscreen = true
+    thumbnail.parentElement.replaceWith(iframe)
+    playButton.remove()
+  }
+  thumbnail.addEventListener('click', showDemo)
+  playButton.addEventListener('click', showDemo)
+</script>
 
 <section class="hero">
   <h1 class="title">
@@ -19,7 +38,7 @@ import figmaLogo from '../assets/figma-logo.svg'
       target="_blank"
       big
     >
-      <Image src={figmaLogo} big class="button-image" alt="" />
+      <Image src={figmaLogo} class="button-image" alt="" />
       Try for Free
     </AppButton>
     <AppButton href="/purchase" target="_blank" big theme="default-outline">
@@ -28,13 +47,13 @@ import figmaLogo from '../assets/figma-logo.svg'
     </AppButton>
   </div>
   <div class="demo">
-    <iframe
-      src="https://www.youtube.com/embed/mnDFb9_E8Oo"
-      title="Demo"
-      frameborder="0"
-      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-      referrerpolicy="strict-origin-when-cross-origin"
-      allowfullscreen></iframe>
+    <button type="button" class="play-button"></button>
+    <Picture
+      src={thumbnailPng}
+      formats={['avif', 'webp']}
+      alt="YouTube Demo"
+      class="video-thumbnail"
+    />
   </div>
 </section>
 
@@ -136,11 +155,81 @@ import figmaLogo from '../assets/figma-logo.svg'
       margin: 60px auto 20px;
     }
 
+    img {
+      cursor: pointer;
+    }
+
+    picture {
+      &::after {
+        position: absolute;
+        inset: 0;
+        content: '';
+        pointer-events: none;
+        background-color: #000;
+        opacity: 0.1;
+        transition: opacity 0.2s ease;
+      }
+
+      &:hover::after {
+        opacity: 0.2;
+      }
+    }
+
+    img,
     iframe {
       position: absolute;
       inset: 0;
       width: 100%;
       height: 100%;
+      border: none;
+    }
+  }
+
+  .play-button {
+    position: absolute;
+    z-index: 1;
+    inset: 0;
+    background: red;
+    border-radius: 50% / 10%;
+    color: #fff;
+    font-size: 20px;
+    height: 3em;
+    margin: auto;
+    padding: 0;
+    text-align: center;
+    text-indent: 0.1em;
+    transition: all 150ms ease-out;
+    width: 4em;
+    border: none;
+    cursor: pointer;
+
+    &:hover {
+      background: darkorange;
+    }
+
+    &::before {
+      background: inherit;
+      border-radius: 5% / 50%;
+      bottom: 9%;
+      content: '';
+      left: -5%;
+      position: absolute;
+      right: -5%;
+      top: 9%;
+    }
+
+    &::after {
+      border-style: solid;
+      border-width: 1em 0 1em 1.732em;
+      border-color: transparent transparent transparent
+        rgba(255, 255, 255, 0.75);
+      content: ' ';
+      font-size: 0.75em;
+      height: 0;
+      margin: -1em 0 0 -0.75em;
+      top: 50%;
+      position: absolute;
+      width: 0;
     }
   }
 </style>
