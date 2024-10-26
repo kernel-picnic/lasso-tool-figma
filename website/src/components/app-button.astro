@@ -29,6 +29,12 @@ const { href, className, big = false, theme = 'default', ...rest } = Astro.props
       font-size: 20px;
       font-weight: 600;
       border-radius: 15px;
+
+      @media (max-width: 768px) {
+        padding: 0 25px;
+        height: 60px;
+        font-size: 18px;
+      }
     }
 
     &.default {

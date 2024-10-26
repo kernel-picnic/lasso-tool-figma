@@ -116,8 +116,7 @@ import thumbnailPng from '../assets/thumbnail@2x.png'
     gap: 20px;
 
     @media (max-width: 768px) {
-      flex-direction: column;
-      align-items: center;
+      gap: 10px;
     }
   }
 
@@ -126,6 +125,12 @@ import thumbnailPng from '../assets/thumbnail@2x.png'
     height: 20px;
     filter: contrast(0) grayscale(1) brightness(10);
     margin-right: 10px;
+
+    @media (max-width: 768px) {
+      width: 15px;
+      height: 15px;
+      margin-right: 7px;
+    }
   }
 
   .btn-note {
