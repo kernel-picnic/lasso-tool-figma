@@ -80,7 +80,10 @@
     @set-license-state="setLicenseActive"
   />
 
-  <feedback :available-actions-count="availableActionsCount" />
+  <feedback
+    v-if="typeof availableActionsCount !== 'undefined'"
+    :available-actions-count="availableActionsCount"
+  />
 </template>
 
 <script>
@@ -115,7 +118,7 @@ export default {
       showLicensePopup: false,
       isLicenseActive: undefined,
       isActionRunning: false,
-      availableActionsCount: '-',
+      availableActionsCount: undefined,
     }
   },
   computed: {

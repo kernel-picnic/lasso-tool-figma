@@ -7,7 +7,7 @@
         <a href="#" class="link" @click.prevent="showPopup">Manage</a>
       </template>
       <template v-else>
-        {{ availableActionsCount }} uses remaining
+        {{ availableActionsCount ?? '-' }} uses remaining
         <a href="#" class="link" @click.prevent="showPopup">Get full access</a>
       </template>
     </div>
@@ -86,7 +86,7 @@ export default {
   emits: ['set-license-state'],
   props: {
     availableActionsCount: {
-      type: [String, Number],
+      type: Number,
       required: true,
     },
     isLicenseActive: {
@@ -112,7 +112,7 @@ export default {
         classes.push('loading')
       } else if (this.isLicenseActive) {
         classes.push('verified')
-      } else if (!this.availableActionsCount) {
+      } else if (this.availableActionsCount === 0) {
         classes.push('warning')
       }
       return classes

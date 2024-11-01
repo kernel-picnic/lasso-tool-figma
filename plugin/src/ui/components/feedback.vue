@@ -1,5 +1,5 @@
 <template>
-  <div v-if="shown" class="feedback">
+  <div v-if="show" class="feedback">
     <close-button class="close-button" @click="close" />
     <div v-if="!rate" class="title">Do you like this tool?</div>
     <template v-if="sent">
@@ -29,13 +29,12 @@
       <div class="rate">
         <feedback-star
           v-for="i in [1, 2, 3, 4, 5]"
-          :value="i"
           class="star"
           :class="{ active: i <= rate }"
           @click="setRate(i)"
         />
       </div>
-      <div v-if="rate < 4">
+      <div v-if="rate && !isGoodRateSelected">
         <div class="subtitle">
           I'm sorry to hear about your experience. Could you let me know how I
           can make it right?
@@ -61,10 +60,12 @@
 
 <script>
 import { defineComponent } from 'vue'
+import { postPluginMessage } from '@ui/utils/post-plugin-message'
 import FeedbackStar from '@ui/components/feedback-star.vue'
 import CommonButton from '@ui/components/common-button.vue'
 import CloseButton from '@ui/components/close-button.vue'
 import { API_URL, DEFAULT_ACTIONS_LIMIT } from '@/constants'
+import { Actions } from '@common/types/actions'
 
 const COMMUNITY_URL =
   'https://www.figma.com/community/plugin/1362438745920118538/lasso-tool'
@@ -73,16 +74,16 @@ export default defineComponent({
   components: { CloseButton, FeedbackStar, CommonButton },
   props: {
     availableActionsCount: {
-      type: [String, Number],
+      type: Number,
       required: true,
     },
   },
   data() {
     return {
-      shown: false,
+      show: false,
       rate: undefined,
       message: '',
-      loading: true,
+      loading: false,
       sent: false,
     }
   },
@@ -91,19 +92,18 @@ export default defineComponent({
       return this.rate >= 4
     },
   },
-  mounted() {
-    // Feedback was shown
-    if (localStorage.getItem('feedback-shown') === '1') {
-      return
-    }
-    if (
-      !isNumber(this.availableActionsCount) ||
-      this.availableActionsCount === DEFAULT_ACTIONS_LIMIT
-    ) {
-      return
-    }
-    this.shown = true
-    localStorage.setItem('feedback-shown', '1')
+  watch: {
+    availableActionsCount: {
+      handler() {
+        // Skip new users
+        if (this.availableActionsCount === DEFAULT_ACTIONS_LIMIT) {
+          return
+        }
+        window.addEventListener('message', this.handleMessages)
+        postPluginMessage({ action: Actions.GET_FEEDBACK_STATE })
+      },
+      immediate: true,
+    },
   },
   methods: {
     setRate(value) {
@@ -127,7 +127,21 @@ export default defineComponent({
       this.close()
     },
     close() {
-      this.shown = false
+      this.show = false
+    },
+    handleMessages({ data }) {
+      const message = data.pluginMessage
+      switch (message.action) {
+        case Actions.PASTE_FEEDBACK_STATE:
+          this.show = !message.wasShown
+          if (this.show) {
+            postPluginMessage({
+              action: Actions.SET_FEEDBACK_STATE,
+              details: { state: true },
+            })
+          }
+          break
+      }
     },
   },
 })

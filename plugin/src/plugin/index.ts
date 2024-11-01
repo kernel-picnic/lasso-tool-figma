@@ -11,6 +11,7 @@ import { copyNode } from '@plugin/actions/copy-node'
 import { cutNode } from '@plugin/actions/cut-node'
 import { prettifyLasso } from '@plugin/actions/prettify-lasso'
 import './subscription'
+import './feedback'
 
 const LASSO_STROKE_BASE_WIDTH = 1.5
 const LASSO_DRAW_INTERVAL = 10
