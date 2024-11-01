@@ -1,8 +1,8 @@
 import { Actions } from '@common/types/actions'
+import { DEFAULT_ACTIONS_LIMIT } from '@/constants'
 
 const LICENSE_INFO_VARIABLE_NAME = 'licenseInfo'
 const ACTIONS_LIMIT_KEY = 'actionsLimit'
-const DEFAULT_ACTIONS_LIMIT = 5
 
 type LicenseInfo = Partial<{
   licenseKey: string

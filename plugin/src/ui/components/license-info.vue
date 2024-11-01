@@ -86,7 +86,7 @@ export default {
   emits: ['set-license-state'],
   props: {
     availableActionsCount: {
-      type: Number,
+      type: [String, Number],
       required: true,
     },
     isLicenseActive: {

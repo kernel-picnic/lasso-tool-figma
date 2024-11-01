@@ -10,12 +10,19 @@
 </template>
 
 <script>
+const THEMES = {
+  DEFAULT: 'default',
+  PRIMARY: 'primary',
+  OUTLINE: 'outline',
+}
+
 export default {
   name: 'CommonButton',
   props: {
     theme: {
       type: String,
-      default: 'default',
+      default: THEMES.DEFAULT,
+      validator: (v) => Object.values(THEMES).includes(v),
     },
     loading: {
       type: Boolean,

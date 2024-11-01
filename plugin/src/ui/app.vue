@@ -79,6 +79,8 @@
     :available-actions-count="availableActionsCount"
     @set-license-state="setLicenseActive"
   />
+
+  <feedback :available-actions-count="availableActionsCount" />
 </template>
 
 <script>
@@ -91,6 +93,7 @@ import LassoInstruction from '@ui/components/lasso-instruction.vue'
 import HelpInfo from '@ui/components/help-info.vue'
 import CommonTooltip from '@ui/components/common-tooltip.vue'
 import CommonButton from '@ui/components/common-button.vue'
+import Feedback from '@ui/components/feedback.vue'
 
 export default {
   name: 'App',
@@ -101,6 +104,7 @@ export default {
     LicenseInfo,
     CommonTooltip,
     CommonButton,
+    Feedback,
   },
   data() {
     return {
