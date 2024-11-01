@@ -1,7 +1,7 @@
 <template>
-  <div v-if="show" class="feedback">
+  <div v-if="isShown" class="feedback">
     <close-button class="close-button" @click="close" />
-    <div v-if="!rate" class="title">Do you like this tool?</div>
+    <div v-if="!rating" class="title">Do you like this tool?</div>
     <template v-if="sent">
       <template v-if="isGoodRateSelected">
         <div class="subtitle">Thank you!</div>
@@ -26,15 +26,15 @@
       </template>
     </template>
     <template v-else>
-      <div class="rate">
+      <div class="rating">
         <feedback-star
           v-for="i in [1, 2, 3, 4, 5]"
           class="star"
-          :class="{ active: i <= rate }"
+          :class="{ active: i <= rating }"
           @click="setRate(i)"
         />
       </div>
-      <div v-if="rate && !isGoodRateSelected">
+      <div v-if="rating && !isGoodRateSelected">
         <div class="subtitle">
           I'm sorry to hear about your experience. Could you let me know how I
           can make it right?
@@ -47,9 +47,8 @@
         />
       </div>
       <common-button
-        v-if="rate"
+        v-if="rating"
         :class="{ 'width-full': !isGoodRateSelected }"
-        :loading="loading"
         @click="submit"
       >
         Submit
@@ -80,66 +79,58 @@ export default defineComponent({
   },
   data() {
     return {
-      show: false,
-      rate: undefined,
+      isShown: false,
+      rating: undefined,
       message: '',
-      loading: false,
       sent: false,
     }
   },
   computed: {
     isGoodRateSelected() {
-      return this.rate >= 4
+      return this.rating >= 4
     },
   },
-  watch: {
-    availableActionsCount: {
-      handler() {
-        // Skip new users
-        if (this.availableActionsCount === DEFAULT_ACTIONS_LIMIT) {
-          return
-        }
-        window.addEventListener('message', this.handleMessages)
-        postPluginMessage({ action: Actions.GET_FEEDBACK_STATE })
-      },
-      immediate: true,
-    },
+  mounted() {
+    window.addEventListener('message', this.handleMessages)
   },
   methods: {
     setRate(value) {
-      this.rate = value
+      this.rating = value
     },
     submit() {
-      this.loading = true
-      fetch(`${API_URL}/feedback`, {
-        method: 'POST',
-        body: JSON.stringify({
-          rate: this.rate,
-          message: this.message,
-        }),
-      }).finally(() => {
-        this.sent = true
-        this.loading = false
+      postPluginMessage({
+        action: Actions.SUBMIT_FEEDBACK,
+        details: { rating: this.rating, message: this.message },
       })
+      this.sent = true
     },
     openCommunity() {
       window.open(COMMUNITY_URL)
       this.close()
     },
+    show() {
+      this.isShown = true
+      postPluginMessage({
+        action: Actions.SET_FEEDBACK_STATE,
+        details: { state: true },
+      })
+    },
     close() {
-      this.show = false
+      this.isShown = false
     },
     handleMessages({ data }) {
       const message = data.pluginMessage
+
       switch (message.action) {
+        case Actions.ACTION_FINISHED:
+          postPluginMessage({ action: Actions.GET_FEEDBACK_STATE })
+          break
+
         case Actions.PASTE_FEEDBACK_STATE:
-          this.show = !message.wasShown
-          if (this.show) {
-            postPluginMessage({
-              action: Actions.SET_FEEDBACK_STATE,
-              details: { state: true },
-            })
+          if (message.wasShown) {
+            return
           }
+          this.show()
           break
       }
     },
@@ -164,7 +155,7 @@ export default defineComponent({
 
 .close-button {
   position: absolute;
-  inset: 10px 10px auto auto;
+  inset: 12px 12px auto auto;
 }
 
 .width-full {
@@ -176,7 +167,7 @@ export default defineComponent({
   letter-spacing: 0.2px;
 }
 
-.rate {
+.rating {
   &:not(:last-child) {
     margin-bottom: 20px;
   }

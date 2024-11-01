@@ -5,7 +5,11 @@
     <a href="#" @click.prevent="openHelp">Help</a>
   </div>
 
-  <help-info v-if="showHelpPopup" @close="closeHelp" />
+  <help-info
+    v-if="showHelpPopup"
+    @close="closeHelp"
+    @leave-feedback="openFeedback"
+  />
 
   <lasso-instruction v-if="isModeSelected" @cancel="cancel" />
 
@@ -82,6 +86,7 @@
 
   <feedback
     v-if="typeof availableActionsCount !== 'undefined'"
+    ref="feedback"
     :available-actions-count="availableActionsCount"
   />
 </template>
@@ -200,6 +205,9 @@ export default {
     },
     closeHelp() {
       this.showHelpPopup = false
+    },
+    openFeedback() {
+      this.$refs.feedback.show()
     },
     // TODO: move to common service
     handleMessages({ data }) {

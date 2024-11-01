@@ -1,4 +1,5 @@
 import { Actions } from '@common/types/actions'
+import { API_URL } from '@/constants.ts'
 
 const FEEDBACK_VARIABLE_NAME = 'feedback-shown'
 
@@ -18,5 +19,16 @@ figma.ui.on('message', (message: { action: Actions; details: any }) => {
         FEEDBACK_VARIABLE_NAME,
         message.details.state,
       )
+      break
+
+    case Actions.SUBMIT_FEEDBACK:
+      fetch(`${API_URL}/feedback`, {
+        method: 'POST',
+        body: JSON.stringify({
+          ...message.details,
+          userId: figma.currentUser?.id,
+        }),
+      })
+      break
   }
 })

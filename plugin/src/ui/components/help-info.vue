@@ -1,7 +1,7 @@
 <template>
   <div class="wrapper">
     <p>
-      <close-button class="close-button" @click="$emit('close')" />
+      <close-button class="close-button" @click="close" />
 
       If you have any questions about using this plugin or if you found a bug,
       please don't hesitate to reach out.
@@ -12,9 +12,10 @@
       results for your experience.
     </p>
 
-    <common-button class="contact-button" @click="writeMessage">
-      Contact with me
-    </common-button>
+    <div class="buttons">
+      <common-button @click="writeMessage">Contact me</common-button>
+      <common-button @click="leaveFeedback">Send feedback</common-button>
+    </div>
   </div>
 </template>
 
@@ -27,10 +28,17 @@ const HELP_LINK = 'mailto:hi@lasso.design'
 export default {
   name: 'HelpInfo',
   components: { CloseButton, CommonButton },
-  emits: ['close'],
+  emits: ['close', 'leave-feedback'],
   methods: {
     writeMessage() {
       window.open(HELP_LINK)
+    },
+    leaveFeedback() {
+      this.$emit('leave-feedback')
+      this.close()
+    },
+    close() {
+      this.$emit('close')
     },
   },
 }
@@ -53,8 +61,14 @@ export default {
   margin: 0 0 10px 10px;
 }
 
-.contact-button {
+.buttons {
   margin-top: auto;
   width: 100%;
+  display: flex;
+  gap: 5px;
+
+  & > * {
+    width: 100%;
+  }
 }
 </style>
