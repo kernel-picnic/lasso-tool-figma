@@ -1,7 +1,7 @@
 import { inv } from 'mathjs'
 import { deepClone } from '@plugin/utils/deep-clone'
 import { applyMatrixToPoint } from '@plugin/utils/apply-matrix-to-point'
-import { convertGradientHandlesToTransform } from '@plugin/utils/convert-gradient-handles-to-ransform.ts'
+import { convertGradientHandlesToTransform } from '@plugin/utils/convert-gradient-handles-to-transform'
 
 const identityMatrixHandlePositions = [
   [0, 1, 0],
