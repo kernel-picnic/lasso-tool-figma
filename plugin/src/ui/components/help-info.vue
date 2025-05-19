@@ -21,7 +21,7 @@
 import CommonButton from '@ui/components/common-button.vue'
 import CloseButton from '@ui/components/close-button.vue'
 
-const HELP_LINK = 'mailto:hi@lasso.design'
+const HELP_LINK = 'mailto:worktrojnin@gmail.com'
 
 export default {
   name: 'HelpInfo',
