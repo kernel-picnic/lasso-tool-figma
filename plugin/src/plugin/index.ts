@@ -10,7 +10,6 @@ import { detachAllInstances } from '@plugin/utils/detach-all-instances'
 import { copyNode } from '@plugin/actions/copy-node'
 import { cutNode } from '@plugin/actions/cut-node'
 import { prettifyLasso } from '@plugin/actions/prettify-lasso'
-import './subscription'
 
 const LASSO_STROKE_BASE_WIDTH = 1.5
 const LASSO_DRAW_INTERVAL = 10
@@ -18,7 +17,7 @@ const LASSO_AUTOSTOP_MIN_VERTICES_COUNT = 50
 const LASSO_AUTOSTOP_BASE_PIXELS_THRESHOLD = 15
 const LASSO_RESULT_GROUP_NAME = 'Lasso Result'
 
-figma.showUI(__html__, { themeColors: true, width: 250, height: 240 })
+figma.showUI(__html__, { themeColors: true, width: 250, height: 210 })
 checkSelection()
 
 let lassoDrawInterval: any // TODO: add type

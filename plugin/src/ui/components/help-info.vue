@@ -3,13 +3,12 @@
     <p>
       <close-button class="close-button" @click="$emit('close')" />
 
-      If you have any questions about using this plugin or if you found a bug,
-      please don't hesitate to reach out.
+      If you have questions or found a bug, feel free to reach out.
     </p>
     <p>
-      This plugin uses a lot of hacks and tricks to achieve better result, but
-      Figma has a complex structure. Nevertheless, my aim is to deliver good
-      results for your experience.
+      This plugin uses various tricks to improve results, though Figma’s
+      complexity may affect outcomes. I aim to provide the best experience
+      possible.
     </p>
 
     <common-button class="contact-button" @click="writeMessage">

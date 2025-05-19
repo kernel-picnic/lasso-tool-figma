@@ -1,1 +1,1 @@
-export const API_URL = 'https://api.lasso.design'
+export const API_URL = 'https://api.lasso-tool-figma.vercel.app'

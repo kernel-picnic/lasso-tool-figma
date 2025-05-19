@@ -9,7 +9,7 @@
 
   <lasso-instruction v-if="isModeSelected" @cancel="cancel" />
 
-  <div v-else :class="['menu', { disabled: isMenuDisabled }]">
+  <template v-else>
     <div v-if="isActionRunning" class="loader">
       <!-- TODO: fix loader freeze -->
       <img src="@ui/assets/loader.svg" alt="" />
@@ -70,15 +70,7 @@
       <!--        Use previous-->
       <!--      </app-button>-->
     </template>
-  </div>
-
-  <license-info
-    v-show="!isModeSelected"
-    ref="licenseInfo"
-    :is-license-active="isLicenseActive"
-    :available-actions-count="availableActionsCount"
-    @set-license-state="setLicenseActive"
-  />
+  </template>
 </template>
 
 <script>
@@ -86,7 +78,6 @@ import { Modes } from '@common/types/modes'
 import { Actions } from '@common/types/actions'
 import { postPluginMessage } from '@ui/utils/post-plugin-message'
 import MenuButton from '@ui/components/menu-button.vue'
-import LicenseInfo from '@ui/components/license-info.vue'
 import LassoInstruction from '@ui/components/lasso-instruction.vue'
 import HelpInfo from '@ui/components/help-info.vue'
 import CommonTooltip from '@ui/components/common-tooltip.vue'
@@ -98,7 +89,6 @@ export default {
     HelpInfo,
     MenuButton,
     LassoInstruction,
-    LicenseInfo,
     CommonTooltip,
     CommonButton,
   },
@@ -108,10 +98,7 @@ export default {
       isShowActions: false,
       isActiveSelection: false,
       showHelpPopup: false,
-      showLicensePopup: false,
-      isLicenseActive: undefined,
       isActionRunning: false,
-      availableActionsCount: '-',
     }
   },
   computed: {
@@ -119,9 +106,6 @@ export default {
     actions: () => Actions,
     isModeSelected() {
       return this.mode !== null
-    },
-    isMenuDisabled() {
-      return this.isShowActions && typeof this.isLicenseActive === 'undefined'
     },
   },
   mounted() {
@@ -153,19 +137,6 @@ export default {
       })
     },
     applyAction(action) {
-      if (!this.isLicenseActive && !this.availableActionsCount) {
-        postPluginMessage({
-          action: Actions.NOTIFY,
-          details: {
-            message: 'No free actions left - get license key to continue',
-            options: {
-              error: true,
-            },
-          },
-        })
-        this.$refs.licenseInfo.popupShown = true
-        return
-      }
       this.isActionRunning = true
       postPluginMessage({ action })
     },
@@ -184,9 +155,6 @@ export default {
     },
     prettify() {
       postPluginMessage({ action: Actions.PRETTIFY_LASSO })
-    },
-    setLicenseActive(value) {
-      this.isLicenseActive = value
     },
     openHelp() {
       this.showHelpPopup = true
@@ -215,10 +183,6 @@ export default {
 
         case Actions.ACTION_FINISHED:
           this.isActionRunning = false
-          break
-
-        case Actions.PASTE_ACTIONS_LIMIT:
-          this.availableActionsCount = message.limit
           break
 
         case Actions.SELECT_CHANGED:
@@ -289,19 +253,6 @@ a {
 
   a {
     color: var(--figma-color-text-secondary);
-  }
-}
-
-.menu {
-  position: relative;
-
-  &.disabled::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background-color: var(--figma-color-bg);
-    opacity: 0.7;
-    z-index: 1;
   }
 }
 
