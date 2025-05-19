@@ -63,7 +63,6 @@ import { postPluginMessage } from '@ui/utils/post-plugin-message'
 import FeedbackStar from '@ui/components/feedback-star.vue'
 import CommonButton from '@ui/components/common-button.vue'
 import CloseButton from '@ui/components/close-button.vue'
-import { API_URL, DEFAULT_ACTIONS_LIMIT } from '@/constants'
 import { Actions } from '@common/types/actions'
 
 const COMMUNITY_URL =
@@ -71,12 +70,6 @@ const COMMUNITY_URL =
 
 export default defineComponent({
   components: { CloseButton, FeedbackStar, CommonButton },
-  props: {
-    availableActionsCount: {
-      type: Number,
-      required: true,
-    },
-  },
   data() {
     return {
       isShown: false,
